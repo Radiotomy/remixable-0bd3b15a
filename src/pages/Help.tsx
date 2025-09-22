@@ -1,21 +1,59 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Search, BookOpen, Code, Coins, Settings, CreditCard, MessageCircle, 
   Mail, Phone, Zap, Shield, Globe, Rocket, Users, TrendingUp,
-  ChevronRight, ExternalLink, Play, Download
+  ChevronRight, ExternalLink, Play, Download, User, LogIn, LogOut
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { User as SupabaseUser } from "@supabase/supabase-js";
+import { useToast } from "@/hooks/use-toast";
 
 const Help = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSection, setActiveSection] = useState("overview");
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error signing out",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Signed out successfully",
+        description: "You have been signed out of your account.",
+      });
+    }
+  };
 
   const helpSections = [
     { id: "overview", title: "Getting Started", icon: BookOpen },
@@ -95,6 +133,25 @@ const Help = () => {
               <Button variant="outline" size="sm" asChild>
                 <Link to="/pricing">Pricing</Link>
               </Button>
+              {user ? (
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    {user.email}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleSignOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/auth" className="flex items-center gap-2">
+                    <LogIn className="w-4 h-4" />
+                    Sign In
+                  </Link>
+                </Button>
+              )}
               <Button size="sm" asChild>
                 <Link to="/">Back to App</Link>
               </Button>

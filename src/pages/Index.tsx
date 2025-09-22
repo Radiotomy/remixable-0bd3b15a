@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { useEffect } from "react";
+import { User as SupabaseUser } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { CategoryTabs } from "@/components/CategoryTabs";
 import { TemplateCard } from "@/components/TemplateCard";
@@ -8,9 +12,8 @@ import { GeneratedAppPreview } from "@/components/GeneratedAppPreview";
 import { ModelSelector, ModelConfig, ModelParameters } from "@/components/ModelSelector";
 import { InfrastructureWizard } from "@/components/InfrastructureWizard";
 import { templates, Template } from "@/data/templates";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { Sparkles, Zap, Github, Twitter } from "lucide-react";
+import { Sparkles, Zap, Github, Twitter, LogIn, LogOut, User } from "lucide-react";
 import { Link } from "react-router-dom";
 import { LiveChatWidget } from "@/components/LiveChatWidget";
 import heroBackground from "@/assets/hero-background.jpg";
@@ -19,6 +22,8 @@ import appIcon from "@/assets/app-icon.png";
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState("all");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const { toast } = useToast();
   const [generatedApp, setGeneratedApp] = useState<{
     title: string;
     description: string;
@@ -49,6 +54,38 @@ const Index = () => {
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showInfrastructureWizard, setShowInfrastructureWizard] = useState(false);
   const [infrastructureConfig, setInfrastructureConfig] = useState<any>(null);
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error signing out",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Signed out successfully",
+        description: "You have been signed out of your account.",
+      });
+    }
+  };
 
   const filteredTemplates = activeCategory === "all" 
     ? templates 
@@ -221,11 +258,25 @@ const Index = () => {
                     Help
                   </Link>
                 </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/auth">
-                    Sign In
-                  </Link>
-                </Button>
+                {user ? (
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      {user.email}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleSignOut}>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </Button>
+                  </div>                
+                ) : (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/auth" className="flex items-center gap-2">
+                      <LogIn className="w-4 h-4" />
+                      Sign In
+                    </Link>
+                  </Button>
+                )}
                 <Button className="bg-primary hover:bg-primary/90" asChild>
                   <Link to="/pricing">
                     <Zap className="w-4 h-4 mr-2" />
