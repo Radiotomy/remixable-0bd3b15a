@@ -17,7 +17,9 @@ import { Sparkles, Zap, Github, Twitter, LogIn, LogOut, User } from "lucide-reac
 import { Link } from "react-router-dom";
 import { LiveChatWidget } from "@/components/LiveChatWidget";
 import heroBackground from "@/assets/hero-background.jpg";
-import appIcon from "@/assets/app-icon.png";
+// Using new branded assets with cache busting
+const appIcon = `/icons/app-icon.png?v=${Date.now()}`;
+const wordmark = `/icons/wordmark.png?v=${Date.now()}`;
 
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState("all");
@@ -221,11 +223,9 @@ const Index = () => {
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
-                  <Sparkles className="w-6 h-6 text-white" />
-                </div>
+                <img src={appIcon} alt="Remixable" className="w-10 h-10 rounded-xl" />
                 <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  <h1 className="text-2xl font-bold text-foreground">
                     Remixable
                   </h1>
                   <p className="text-xs text-muted-foreground">AI-Powered No-Code Builder</p>
