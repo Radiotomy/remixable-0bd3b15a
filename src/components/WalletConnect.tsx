@@ -12,7 +12,7 @@ export const WalletConnect = () => {
     chain,
     ethBalance,
     usdcBalance,
-    connectWallet,
+    connectCoinbaseWallet,
     disconnectWallet,
     isConnecting,
   } = useWallet()
@@ -56,11 +56,11 @@ export const WalletConnect = () => {
         </CardHeader>
         <CardContent>
           <Button 
-            onClick={connectWallet} 
+            onClick={connectCoinbaseWallet} 
             disabled={isConnecting}
             className="w-full"
           >
-            {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+            {isConnecting ? 'Connecting...' : 'Connect BASE Wallet'}
           </Button>
         </CardContent>
       </Card>

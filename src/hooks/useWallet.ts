@@ -24,14 +24,34 @@ export const useWallet = () => {
     token: chain?.id ? USDC_CONTRACT_ADDRESS[chain.id] : undefined,
   })
 
-  const connectWallet = useCallback(async () => {
+  const connectWallet = useCallback(async (preferredWallet?: string) => {
     try {
-      const coinbaseConnector = connectors.find(c => c.name.toLowerCase().includes('coinbase'))
-      if (coinbaseConnector) {
-        connect({ connector: coinbaseConnector })
-      } else {
-        connect({ connector: connectors[0] })
+      let connector
+      
+      if (preferredWallet === 'coinbase' || !preferredWallet) {
+        // Prioritize Coinbase Wallet for BASE
+        connector = connectors.find(c => 
+          c.name.toLowerCase().includes('coinbase') || 
+          c.id === 'coinbaseWalletSDK'
+        )
+      } else if (preferredWallet === 'metamask') {
+        connector = connectors.find(c => 
+          c.name.toLowerCase().includes('metamask') ||
+          c.id === 'metaMask'
+        )
       }
+      
+      // Fallback to first available connector
+      if (!connector) {
+        connector = connectors[0]
+      }
+      
+      connect({ connector })
+      
+      toast({
+        title: 'Connecting to Wallet',
+        description: `Connecting to ${connector.name}...`,
+      })
     } catch (error) {
       console.error('Error connecting wallet:', error)
       toast({
@@ -84,6 +104,10 @@ export const useWallet = () => {
     }
   }, [isConnected, address, toast])
 
+  const connectCoinbaseWallet = useCallback(() => {
+    connectWallet('coinbase')
+  }, [connectWallet])
+
   return {
     // Wallet state
     address,
@@ -94,6 +118,7 @@ export const useWallet = () => {
     
     // Wallet actions
     connectWallet,
+    connectCoinbaseWallet, // Specific BASE wallet connection
     disconnectWallet,
     isConnecting: isPending,
     
