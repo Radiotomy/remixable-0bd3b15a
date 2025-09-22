@@ -164,9 +164,16 @@ const Index = () => {
                   <Twitter className="w-4 h-4 mr-2" />
                   Twitter
                 </Button>
-                <Button className="bg-primary hover:bg-primary/90">
-                  <Zap className="w-4 h-4 mr-2" />
-                  Get Started
+                <Button variant="outline" size="sm" asChild>
+                  <a href="/auth">
+                    Sign In
+                  </a>
+                </Button>
+                <Button className="bg-primary hover:bg-primary/90" asChild>
+                  <a href="/pricing">
+                    <Zap className="w-4 h-4 mr-2" />
+                    Get Started
+                  </a>
                 </Button>
               </div>
             </div>
