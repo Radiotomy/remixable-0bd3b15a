@@ -4,7 +4,9 @@ import { CategoryTabs } from "@/components/CategoryTabs";
 import { TemplateCard } from "@/components/TemplateCard";
 import { ChatInterface } from "@/components/ChatInterface";
 import { AppPreview } from "@/components/AppPreview";
+import { ModelSelector, ModelConfig, ModelParameters } from "@/components/ModelSelector";
 import { templates, Template } from "@/data/templates";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Sparkles, Zap, Github, Twitter } from "lucide-react";
 import heroBackground from "@/assets/hero-background.jpg";
@@ -14,41 +16,119 @@ const Index = () => {
   const [activeCategory, setActiveCategory] = useState("all");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedApp, setGeneratedApp] = useState<any>(null);
+  const [selectedModels, setSelectedModels] = useState<{
+    code?: ModelConfig;
+    text?: ModelConfig;
+    image?: ModelConfig;
+  }>({});
+  const [showModelSelector, setShowModelSelector] = useState(false);
 
   const filteredTemplates = activeCategory === "all" 
     ? templates 
     : templates.filter(template => template.category === activeCategory);
 
-  const handleTemplateSelect = (template: Template) => {
+  const handleModelSelect = (category: string, model: ModelConfig, parameters: ModelParameters) => {
+    setSelectedModels(prev => ({
+      ...prev,
+      [category]: model
+    }));
+    console.log(`Selected ${category} model:`, model.name, 'with parameters:', parameters);
+  };
+
+  const handleTemplateSelect = async (template: Template) => {
+    if (!selectedModels.code) {
+      setShowModelSelector(true);
+      return;
+    }
+
     setIsGenerating(true);
     setGeneratedApp(null);
     
-    // Simulate app generation
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.functions.invoke('openrouter-generate', {
+        body: {
+          prompt: `Generate a React component for a ${template.title} app. ${template.description}. Use TypeScript, Tailwind CSS, and modern React patterns. Make it functional and well-structured.`,
+          model: selectedModels.code.id,
+          category: 'code',
+          parameters: {
+            temperature: 0.7,
+            max_tokens: 2000
+          }
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data.success) {
+        setGeneratedApp({
+          title: template.title,
+          description: template.description,
+          features: template.features,
+          previewUrl: "#",
+          code: data.data.content
+        });
+      } else {
+        throw new Error(data.error || 'Generation failed');
+      }
+    } catch (error) {
+      console.error('Error generating app:', error);
+      // Fallback to mock generation
       setGeneratedApp({
         title: template.title,
         description: template.description,
         features: template.features,
         previewUrl: "#"
       });
-      setIsGenerating(false);
-    }, 3000);
+    }
+    setIsGenerating(false);
   };
 
-  const handleChatGenerate = (prompt: string) => {
+  const handleChatGenerate = async (prompt: string) => {
+    if (!selectedModels.code) {
+      setShowModelSelector(true);
+      return;
+    }
+
     setIsGenerating(true);
     setGeneratedApp(null);
     
-    // Simulate app generation from chat
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.functions.invoke('openrouter-generate', {
+        body: {
+          prompt: `Generate a complete React application based on this description: "${prompt}". Use TypeScript, Tailwind CSS, and modern React patterns. Create functional components with proper state management.`,
+          model: selectedModels.code.id,
+          category: 'code',
+          parameters: {
+            temperature: 0.8,
+            max_tokens: 3000
+          }
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data.success) {
+        setGeneratedApp({
+          title: "Custom AI App",
+          description: `Generated app based on: "${prompt}"`,
+          features: ["AI-Powered", "Custom Logic", "Modern UI", "Responsive Design", "Real-time Updates"],
+          previewUrl: "#",
+          code: data.data.content
+        });
+      } else {
+        throw new Error(data.error || 'Generation failed');
+      }
+    } catch (error) {
+      console.error('Error generating app:', error);
+      // Fallback to mock generation
       setGeneratedApp({
         title: "Custom AI App",
         description: `Generated app based on: "${prompt}"`,
         features: ["AI-Powered", "Custom Logic", "Modern UI", "Responsive Design", "Real-time Updates"],
         previewUrl: "#"
       });
-      setIsGenerating(false);
-    }, 3000);
+    }
+    setIsGenerating(false);
   };
 
   return (
@@ -134,6 +214,35 @@ const Index = () => {
                 onCategoryChange={setActiveCategory}
               />
             </div>
+
+            {/* Model Selector */}
+            {showModelSelector && (
+              <div className="mb-8">
+                <ModelSelector
+                  onModelSelect={handleModelSelect}
+                  selectedModels={selectedModels}
+                />
+                <div className="mt-4 text-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowModelSelector(false)}
+                  >
+                    Hide Model Selection
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {!showModelSelector && (
+              <div className="mb-6 text-center">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowModelSelector(true)}
+                >
+                  Configure AI Models ({Object.keys(selectedModels).length} selected)
+                </Button>
+              </div>
+            )}
 
             {/* Templates Grid & Chat Interface */}
             <div className="grid lg:grid-cols-2 gap-8">
