@@ -5,6 +5,7 @@ import { TemplateCard } from "@/components/TemplateCard";
 import { ChatInterface } from "@/components/ChatInterface";
 import { AppPreview } from "@/components/AppPreview";
 import { ModelSelector, ModelConfig, ModelParameters } from "@/components/ModelSelector";
+import { InfrastructureWizard } from "@/components/InfrastructureWizard";
 import { templates, Template } from "@/data/templates";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,8 @@ const Index = () => {
     image?: ModelConfig;
   }>({});
   const [showModelSelector, setShowModelSelector] = useState(false);
+  const [showInfrastructureWizard, setShowInfrastructureWizard] = useState(false);
+  const [infrastructureConfig, setInfrastructureConfig] = useState<any>(null);
 
   const filteredTemplates = activeCategory === "all" 
     ? templates 
@@ -165,6 +168,13 @@ const Index = () => {
                   <Twitter className="w-4 h-4 mr-2" />
                   Twitter
                 </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowInfrastructureWizard(!showInfrastructureWizard)}
+                >
+                  Infrastructure
+                </Button>
                 <Button variant="outline" size="sm" asChild>
                   <Link to="/integrations">
                     Integrations
@@ -254,6 +264,28 @@ const Index = () => {
                 >
                   Configure AI Models ({Object.keys(selectedModels).length} selected)
                 </Button>
+              </div>
+            )}
+
+            {/* Infrastructure Wizard */}
+            {showInfrastructureWizard && (
+              <div className="mb-8">
+                <InfrastructureWizard 
+                  appType={activeCategory === "all" ? "default" : activeCategory}
+                  onSelectionChange={setInfrastructureConfig}
+                  onComplete={(config) => {
+                    setInfrastructureConfig(config);
+                    setShowInfrastructureWizard(false);
+                  }}
+                />
+                <div className="mt-4 text-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowInfrastructureWizard(false)}
+                  >
+                    Hide Infrastructure Setup
+                  </Button>
+                </div>
               </div>
             )}
 
