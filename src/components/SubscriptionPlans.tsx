@@ -53,7 +53,7 @@ export const SubscriptionPlans = ({ onPlanSelect }: SubscriptionPlansProps) => {
           : plan.crypto_price_yearly_usdc
 
         if (amount > 0) {
-          const success = await processUSDCPayment(amount)
+          const success = await processUSDCPayment(amount, planId)
           if (!success) {
             setLoading(false)
             return

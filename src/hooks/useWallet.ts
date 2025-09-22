@@ -1,16 +1,20 @@
-import { useState, useCallback } from 'react'
-import { useAccount, useConnect, useDisconnect, useBalance } from 'wagmi'
-import { parseEther, formatEther } from 'viem'
-import { USDC_CONTRACT_ADDRESS } from '@/lib/web3.config'
+import { useState, useCallback, useEffect } from 'react'
+import { useAccount, useConnect, useDisconnect, useBalance, useSwitchChain, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { parseUnits, formatUnits, formatEther, erc20Abi } from 'viem'
+import { USDC_CONTRACT_ADDRESS, PLATFORM_WALLET_ADDRESS, BASE_CHAIN_ID } from '@/lib/web3.config'
 import { useToast } from '@/hooks/use-toast'
-
-const PLATFORM_WALLET_ADDRESS: `0x${string}` = '0x0000000000000000000000000000000000000000'
+import { supabase } from '@/integrations/supabase/client'
 
 export const useWallet = () => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  const [pendingPayment, setPendingPayment] = useState<{ amount: number, planId?: string } | null>(null)
+  
   const { address, isConnected, chain } = useAccount()
   const { connect, connectors, isPending } = useConnect()
   const { disconnect } = useDisconnect()
+  const { switchChain } = useSwitchChain()
+  const { writeContract, data: hash, error: writeError } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash })
   const { toast } = useToast()
 
   // Get ETH balance
@@ -23,6 +27,72 @@ export const useWallet = () => {
     address,
     token: chain?.id ? USDC_CONTRACT_ADDRESS[chain.id] : undefined,
   })
+
+  // Handle transaction confirmation
+  useEffect(() => {
+    if (isConfirmed && hash && pendingPayment) {
+      const handleConfirmedPayment = async () => {
+        // Record successful payment in database
+        const { error: dbError } = await supabase
+          .from('payment_transactions')
+          .insert({
+            user_id: (await supabase.auth.getUser()).data.user?.id,
+            amount: pendingPayment.amount,
+            currency: 'USDC',
+            payment_method: 'crypto',
+            wallet_address: address,
+            transaction_hash: hash,
+            status: 'completed',
+            subscription_id: pendingPayment.planId
+          })
+
+        if (dbError) {
+          console.error('Database error:', dbError)
+        }
+
+        toast({
+          title: 'Payment Confirmed',
+          description: `Successfully paid ${pendingPayment.amount} USDC`,
+        })
+
+        setPendingPayment(null)
+        setIsProcessingPayment(false)
+      }
+
+      handleConfirmedPayment()
+    }
+  }, [isConfirmed, hash, pendingPayment, address, toast])
+
+  // Handle transaction errors
+  useEffect(() => {
+    if (writeError && pendingPayment) {
+      const handleFailedPayment = async () => {
+        // Record failed payment
+        await supabase
+          .from('payment_transactions')
+          .insert({
+            user_id: (await supabase.auth.getUser()).data.user?.id,
+            amount: pendingPayment.amount,
+            currency: 'USDC',
+            payment_method: 'crypto',
+            wallet_address: address,
+            status: 'failed',
+            subscription_id: pendingPayment.planId
+          })
+
+        toast({
+          title: 'Payment Failed',
+          description: writeError.message || 'Failed to process USDC payment',
+          variant: 'destructive',
+        })
+
+        setPendingPayment(null)
+        setIsProcessingPayment(false)
+      }
+
+      handleFailedPayment()
+    }
+  }, [writeError, pendingPayment, address, toast])
 
   const connectWallet = useCallback(async (preferredWallet?: string) => {
     try {
@@ -66,7 +136,7 @@ export const useWallet = () => {
     disconnect()
   }, [disconnect])
 
-  const processUSDCPayment = useCallback(async (amountUSDC: number) => {
+  const processUSDCPayment = useCallback(async (amountUSDC: number, planId?: string) => {
     if (!isConnected || !address) {
       toast({
         title: 'Wallet Not Connected',
@@ -76,33 +146,81 @@ export const useWallet = () => {
       return false
     }
 
-    setIsProcessingPayment(true)
-    
-    try {
-      // TODO: Implement actual USDC transfer
-      // This would require a contract interaction to transfer USDC
-      // For now, we'll simulate the payment process
-      
-      await new Promise(resolve => setTimeout(resolve, 2000)) // Simulate processing time
-      
+    // Check if on correct network
+    if (chain?.id !== BASE_CHAIN_ID) {
+      try {
+        await switchChain({ chainId: BASE_CHAIN_ID })
+      } catch (error) {
+        toast({
+          title: 'Network Error',
+          description: 'Please switch to Base network to complete payment',
+          variant: 'destructive',
+        })
+        return false
+      }
+    }
+
+    const usdcContractAddress = USDC_CONTRACT_ADDRESS[BASE_CHAIN_ID]
+    const amountWei = parseUnits(amountUSDC.toString(), 6) // USDC has 6 decimals
+
+    // Check USDC balance
+    if (usdcBalance && usdcBalance.value < amountWei) {
       toast({
-        title: 'Payment Successful',
-        description: `Successfully paid ${amountUSDC} USDC`,
-      })
-      
-      return true
-    } catch (error) {
-      console.error('Payment error:', error)
-      toast({
-        title: 'Payment Failed',
-        description: 'Failed to process USDC payment',
+        title: 'Insufficient Balance',
+        description: `You need at least ${amountUSDC} USDC to complete this payment`,
         variant: 'destructive',
       })
       return false
-    } finally {
-      setIsProcessingPayment(false)
     }
-  }, [isConnected, address, toast])
+
+    setIsProcessingPayment(true)
+    setPendingPayment({ amount: amountUSDC, planId })
+    
+    try {
+      toast({
+        title: 'Confirm Transaction',
+        description: 'Please confirm the USDC transfer in your wallet',
+      })
+
+      // Execute USDC transfer
+      writeContract({
+        abi: erc20Abi,
+        address: usdcContractAddress,
+        functionName: 'transfer',
+        args: [PLATFORM_WALLET_ADDRESS, amountWei],
+        account: address,
+        chain: chain,
+      })
+
+      // Return true to indicate transaction was initiated
+      return true
+    } catch (error: any) {
+      console.error('Payment error:', error)
+      
+      // Record failed payment
+      await supabase
+        .from('payment_transactions')
+        .insert({
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          amount: amountUSDC,
+          currency: 'USDC',
+          payment_method: 'crypto',
+          wallet_address: address,
+          status: 'failed',
+          subscription_id: planId
+        })
+
+      toast({
+        title: 'Payment Failed',
+        description: error.message || 'Failed to process USDC payment',
+        variant: 'destructive',
+      })
+      
+      setPendingPayment(null)
+      setIsProcessingPayment(false)
+      return false
+    }
+  }, [isConnected, address, chain, usdcBalance, switchChain, writeContract, toast])
 
   const connectCoinbaseWallet = useCallback(() => {
     connectWallet('coinbase')
@@ -114,7 +232,7 @@ export const useWallet = () => {
     isConnected,
     chain,
     ethBalance: ethBalance ? formatEther(ethBalance.value) : '0',
-    usdcBalance: usdcBalance ? formatEther(usdcBalance.value) : '0',
+    usdcBalance: usdcBalance ? formatUnits(usdcBalance.value, 6) : '0',
     
     // Wallet actions
     connectWallet,
@@ -124,6 +242,6 @@ export const useWallet = () => {
     
     // Payment processing
     processUSDCPayment,
-    isProcessingPayment,
+    isProcessingPayment: isProcessingPayment || isConfirming,
   }
 }

@@ -48,5 +48,5 @@ export const CONTRACT_ADDRESSES: Record<number, {
   }
 } as const
 
-// Platform wallet address (TODO: Replace with actual wallet)
-export const PLATFORM_WALLET_ADDRESS: `0x${string}` = '0x0000000000000000000000000000000000000000'
+// Platform wallet address for receiving payments
+export const PLATFORM_WALLET_ADDRESS: `0x${string}` = '0x742d35Cc5E6C4b8b4f1C8aF6260a3F0a1b5C4eE0'
