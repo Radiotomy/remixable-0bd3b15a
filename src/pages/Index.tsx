@@ -9,6 +9,7 @@ import { templates, Template } from "@/data/templates";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Sparkles, Zap, Github, Twitter } from "lucide-react";
+import { Link } from "react-router-dom";
 import heroBackground from "@/assets/hero-background.jpg";
 import appIcon from "@/assets/app-icon.png";
 
@@ -165,15 +166,20 @@ const Index = () => {
                   Twitter
                 </Button>
                 <Button variant="outline" size="sm" asChild>
-                  <a href="/auth">
+                  <Link to="/integrations">
+                    Integrations
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/auth">
                     Sign In
-                  </a>
+                  </Link>
                 </Button>
                 <Button className="bg-primary hover:bg-primary/90" asChild>
-                  <a href="/pricing">
+                  <Link to="/pricing">
                     <Zap className="w-4 h-4 mr-2" />
                     Get Started
-                  </a>
+                  </Link>
                 </Button>
               </div>
             </div>
