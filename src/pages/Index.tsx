@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Sparkles, Zap, Github, Twitter } from "lucide-react";
 import { Link } from "react-router-dom";
+import { LiveChatWidget } from "@/components/LiveChatWidget";
 import heroBackground from "@/assets/hero-background.jpg";
 import appIcon from "@/assets/app-icon.png";
 
@@ -213,6 +214,11 @@ const Index = () => {
                 <Button variant="outline" size="sm" asChild>
                   <Link to="/integrations">
                     Integrations
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/help">
+                    Help
                   </Link>
                 </Button>
                 <Button variant="outline" size="sm" asChild>
@@ -420,12 +426,31 @@ const Index = () => {
               </div>
             </div>
             
-            <div className="mt-8 pt-8 border-t border-border/50 text-center text-sm text-muted-foreground">
-              © 2024 Remixable. Built with AI, designed for developers.
+            <div className="mt-8 pt-8 border-t border-border/50 text-center space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Developed and Built with Love by Raditomy
+              </p>
+              <div className="flex justify-center gap-6 text-xs text-muted-foreground">
+                <a href="mailto:support@remixable.app" className="hover:text-primary transition-colors">
+                  support@remixable.app
+                </a>
+                <a href="mailto:dev@remixable.app" className="hover:text-primary transition-colors">
+                  dev@remixable.app
+                </a>
+                <Link to="/help" className="hover:text-primary transition-colors">
+                  Help Center
+                </Link>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                © 2024 Remixable. All rights reserved.
+              </p>
             </div>
           </div>
         </footer>
       </div>
+      
+      {/* Live Chat Widget */}
+      <LiveChatWidget />
     </div>
   );
 };
