@@ -28,8 +28,8 @@ const Help = () => {
 
   const tokenomicsData = {
     remixToken: {
-      name: "REMIX Token",
-      symbol: "REMIX",
+      name: "RMX Token",
+      symbol: "RMX",
       network: "BASE",
       totalSupply: "1,000,000,000",
       distribution: [
@@ -239,7 +239,7 @@ const Help = () => {
                 <div>
                   <h1 className="text-3xl font-bold mb-2">Tokenomics & Economy</h1>
                   <p className="text-muted-foreground">
-                    Understanding REMIX token and app-specific token economics
+                    Understanding RMX token and app-specific token economics
                   </p>
                 </div>
 
@@ -247,7 +247,7 @@ const Help = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Coins className="w-5 h-5 text-primary" />
-                      REMIX Platform Token
+                      RMX Platform Token
                     </CardTitle>
                     <CardDescription>
                       The native governance and utility token of the Remixable platform
