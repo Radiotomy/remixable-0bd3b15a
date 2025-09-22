@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Pricing from "./pages/Pricing";
 import Integrations from "./pages/Integrations";
 import Help from "./pages/Help";
+import PlatformAdmin from "./pages/PlatformAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/integrations" element={<Integrations />} />
             <Route path="/help" element={<Help />} />
+            <Route path="/platform-admin" element={<PlatformAdmin />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
