@@ -1,5 +1,4 @@
 import { useLiveQuery, useFireproof } from '@fireproof/react'
-import { Database } from '@fireproof/core'
 
 export interface Project {
   _id?: string
@@ -18,11 +17,9 @@ export interface Project {
 export const useFireproofProjects = () => {
   const { database } = useFireproof('remixable-projects')
   
-  const projects = useLiveQuery('projects', {
-    map: function(doc: any) {
-      if (doc.type === 'project') {
-        emit(doc.created_at, doc)
-      }
+  const projects = useLiveQuery((doc: any) => {
+    if (doc.type === 'project') {
+      return doc.created_at
     }
   })
 
@@ -48,8 +45,7 @@ export const useFireproofProjects = () => {
   }
 
   const deleteProject = async (id: string) => {
-    const doc = await database.get(id)
-    return await database.del(doc._id, doc._rev)
+    return await database.del(id)
   }
 
   return {
