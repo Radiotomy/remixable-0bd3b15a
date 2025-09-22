@@ -30,5 +30,23 @@ export const USDC_CONTRACT_ADDRESS: Record<number, `0x${string}`> = {
   [baseGoerli.id]: '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
 } as const
 
+// Contract addresses (deployed on BASE mainnet)
+export const CONTRACT_ADDRESSES: Record<number, {
+  rmxToken: `0x${string}`;
+  tokenFactory: `0x${string}`;
+  revenueDistribution: `0x${string}`;
+}> = {
+  [base.id]: {
+    rmxToken: '0x0000000000000000000000000000000000000000', // Will be updated after deployment
+    tokenFactory: '0x0000000000000000000000000000000000000000',
+    revenueDistribution: '0x0000000000000000000000000000000000000000',
+  },
+  [baseGoerli.id]: {
+    rmxToken: '0x0000000000000000000000000000000000000000',
+    tokenFactory: '0x0000000000000000000000000000000000000000', 
+    revenueDistribution: '0x0000000000000000000000000000000000000000',
+  }
+} as const
+
 // Platform wallet address (TODO: Replace with actual wallet)
 export const PLATFORM_WALLET_ADDRESS: `0x${string}` = '0x0000000000000000000000000000000000000000'
