@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Check, CreditCard, Wallet } from 'lucide-react'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useWallet } from '@/hooks/useWallet'
+import { useStripe } from '@/hooks/useStripe'
 import { useToast } from '@/hooks/use-toast'
 
 interface SubscriptionPlansProps {
@@ -20,6 +21,7 @@ export const SubscriptionPlans = ({ onPlanSelect }: SubscriptionPlansProps) => {
   
   const { plans, currentSubscription, createSubscription } = useSubscription()
   const { isConnected, connectWallet, processUSDCPayment, address } = useWallet()
+  const { createCheckoutSession, loading: stripeLoading } = useStripe()
   const { toast } = useToast()
 
   const handlePlanSelect = async (planId: string) => {
@@ -60,15 +62,14 @@ export const SubscriptionPlans = ({ onPlanSelect }: SubscriptionPlansProps) => {
 
         await createSubscription(planId, 'crypto', address)
       } else {
-        // Stripe payment - placeholder for now
-        toast({
-          title: 'Stripe Integration',
-          description: 'Stripe payment will be available once API key is configured',
-        })
-        
-        // For free plan, create subscription directly
+        // Stripe payment
         if (plan.price_monthly === 0) {
+          // Free plan - create subscription directly
           await createSubscription(planId, 'stripe')
+        } else {
+          // Paid plan - redirect to Stripe Checkout
+          await createCheckoutSession(planId)
+          return // Don't continue after redirect
         }
       }
 
@@ -173,10 +174,10 @@ export const SubscriptionPlans = ({ onPlanSelect }: SubscriptionPlansProps) => {
                 <Button
                   className="w-full"
                   variant={isCurrentPlan ? 'secondary' : 'default'}
-                  disabled={loading || isCurrentPlan}
+                  disabled={loading || stripeLoading || isCurrentPlan}
                   onClick={() => handlePlanSelect(plan.id)}
                 >
-                  {loading && selectedPlan === plan.id ? (
+                  {(loading || stripeLoading) && selectedPlan === plan.id ? (
                     'Processing...'
                   ) : isCurrentPlan ? (
                     'Current Plan'
