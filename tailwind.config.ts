@@ -22,6 +22,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          glow: "hsl(var(--primary-glow))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -57,6 +58,12 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        gradient: {
+          primary: "var(--gradient-primary)",
+          secondary: "var(--gradient-secondary)", 
+          hero: "var(--gradient-hero)",
+          glass: "var(--gradient-glass)",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -80,10 +87,17 @@ export default {
             height: "0",
           },
         },
+        "glow": {
+          "0%": { boxShadow: "0 0 20px hsl(var(--primary) / 0.3)" },
+          "100%": { boxShadow: "0 0 40px hsl(var(--primary) / 0.6)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "gradient": "gradient 15s ease infinite",
+        "float": "float 6s ease-in-out infinite",
+        "glow": "glow 2s ease-in-out infinite alternate",
       },
     },
   },
