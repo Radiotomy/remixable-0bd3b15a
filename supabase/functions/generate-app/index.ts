@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,773 +10,494 @@ interface GenerateAppRequest {
   prompt: string;
   template?: string;
   category?: string;
-  infrastructure?: {
-    database: string;
-    storage: string;
-    rpc: string;
-    paymaster?: string;
-  };
-  userId?: string;
+  infrastructure?: any;
 }
 
-interface GeneratedApp {
-  title: string;
-  description: string;
-  features: string[];
-  code: {
-    components: Record<string, string>;
-    hooks: Record<string, string>;
-    utils: Record<string, string>;
-    types: string;
-    config: string;
-  };
-  backend: {
-    schema: string;
-    edgeFunctions: Record<string, string>;
-    rls: string[];
-  };
-  deployment: {
-    envVars: Record<string, string>;
-    buildCommands: string[];
-  };
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
+    if (!OPENROUTER_API_KEY) {
+      throw new Error('OPENROUTER_API_KEY is not set');
+    }
+
+    const body: GenerateAppRequest = await req.json();
+    const { prompt, template, category = 'web', infrastructure } = body;
+
+    console.log(`Generating app with OpenRouter - Prompt: ${prompt}, Category: ${category}`);
+
+    // Generate app structure using OpenRouter
+    const appStructurePrompt = `
+You are an expert React/TypeScript developer and app architect. Generate a complete, production-ready web application based on this request: "${prompt}"
+
+Create a structured JSON response with the following format:
+{
+  "title": "App Name",
+  "description": "Brief description of the app",
+  "features": ["feature1", "feature2", "feature3"],
+  "code": {
+    "components": {
+      "App.tsx": "complete React component code with imports",
+      "HomePage.tsx": "homepage component with modern UI",
+      "Header.tsx": "header component with navigation",
+      "Footer.tsx": "footer component"
+    },
+    "hooks": {
+      "useAppState.ts": "custom React hook for app state management",
+      "useApi.ts": "custom hook for API calls"
+    },
+    "utils": {
+      "helpers.ts": "utility functions",
+      "constants.ts": "app constants"
+    },
+    "types": "TypeScript interfaces and types",
+    "config": "App configuration object"
+  },
+  "backend": {
+    "schema": "SQL schema for Supabase tables if needed",
+    "edgeFunctions": {
+      "api-handler": "Supabase edge function code if needed"
+    },
+    "rls": ["RLS policy statements if needed"]
+  },
+  "deployment": {
+    "envVars": {"NEXT_PUBLIC_APP_NAME": "value"},
+    "buildCommands": ["npm run build"]
+  }
 }
 
-class AppGenerator {
-  private openrouterKey: string;
-  private supabase: any;
+Requirements:
+- Use modern React with TypeScript
+- Use Tailwind CSS for styling with semantic design tokens
+- Include shadcn/ui components where appropriate
+- Make it responsive and accessible
+- Include proper error handling
+- Add loading states and smooth animations
+- Follow React best practices and hooks patterns
+- Include proper TypeScript types
+- Make components reusable and well-structured
 
-  constructor() {
-    this.openrouterKey = Deno.env.get('OPENROUTER_API_KEY')!;
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    this.supabase = createClient(supabaseUrl, supabaseKey);
-  }
-
-  async generateFullApp(request: GenerateAppRequest): Promise<GeneratedApp> {
-    console.log('Generating full app with infrastructure:', request.infrastructure);
-    
-    // Analyze prompt and determine app requirements
-    const analysis = await this.analyzeAppRequirements(request.prompt, request.template);
-    
-    // Generate React components with proper integration
-    const components = await this.generateComponents(analysis, request.infrastructure);
-    
-    // Generate hooks and utilities
-    const hooks = await this.generateHooks(analysis, request.infrastructure);
-    const utils = await this.generateUtils(analysis);
-    
-    // Generate TypeScript types
-    const types = await this.generateTypes(analysis);
-    
-    // Generate app configuration
-    const config = await this.generateConfig(analysis, request.infrastructure);
-    
-    // Generate backend schema and functions
-    const backend = await this.generateBackend(analysis, request.infrastructure);
-    
-    // Generate deployment configuration
-    const deployment = await this.generateDeployment(analysis, request.infrastructure);
-
-    return {
-      title: analysis.title,
-      description: analysis.description,
-      features: analysis.features,
-      code: {
-        components,
-        hooks,
-        utils,
-        types,
-        config
-      },
-      backend,
-      deployment
-    };
-  }
-
-  private async analyzeAppRequirements(prompt: string, template?: string) {
-    const systemPrompt = `You are an expert full-stack app architect. Analyze the user's request and return a comprehensive app specification.
-
-    User prompt: "${prompt}"
-    Template: ${template || 'none'}
-    
-    Return a detailed JSON specification with:
-    - title: App name
-    - description: Brief description  
-    - features: Array of key features
-    - dataModels: Array of data entities needed
-    - apiEndpoints: Array of API endpoints needed
-    - integrations: Array of third-party integrations
-    - uiComponents: Array of UI components needed
-    - complexity: 'simple' | 'medium' | 'complex'
-    
-    Focus on practical, buildable features that can be implemented with React, Supabase, and modern web APIs.`;
+Generate complete, working code that can be immediately used. Focus on the specific functionality requested in: "${prompt}"
+`;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.openrouterKey}`,
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: 'anthropic/claude-3.5-sonnet',
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
+          {
+            role: 'system',
+            content: 'You are an expert React/TypeScript developer. Generate complete, production-ready code following modern best practices. Always respond with valid JSON.'
+          },
+          { role: 'user', content: appStructurePrompt }
         ],
-        max_tokens: 2000,
         temperature: 0.7,
+        max_tokens: 8000,
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenRouter API error:', errorText);
+      throw new Error(`OpenRouter API error: ${response.status} ${errorText}`);
+    }
+
     const data = await response.json();
-    const analysisText = data.choices[0].message.content;
-    
+    const generatedContent = data.choices[0].message.content;
+
+    console.log('Raw OpenRouter response:', generatedContent);
+
+    // Parse the generated JSON response
+    let appData;
     try {
-      return JSON.parse(analysisText);
-    } catch (e) {
-      // Fallback if JSON parsing fails
-      return {
-        title: 'Generated App',
-        description: prompt,
-        features: ['Modern UI', 'Responsive Design', 'Interactive Features'],
-        dataModels: ['User', 'Content'],
-        apiEndpoints: ['/api/data', '/api/users'],
-        integrations: [],
-        uiComponents: ['Header', 'MainContent', 'Footer'],
-        complexity: 'simple'
-      };
-    }
-  }
-
-  private async generateComponents(analysis: any, infrastructure?: any): Promise<Record<string, string>> {
-    const components: Record<string, string> = {};
-    
-    // Generate App.tsx with proper setup
-    components['App.tsx'] = `import React from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '@/components/ui/toaster';
-import { Toaster as Sonner } from '@/components/ui/sonner';
-import { TooltipProvider } from '@/components/ui/tooltip';
-${infrastructure?.database === 'fireproof' ? "import { FireproofProvider } from '@/hooks/useFireproof';" : ''}
-import { Header } from '@/components/Header';
-import { MainContent } from '@/components/MainContent';
-import { Footer } from '@/components/Footer';
-
-const queryClient = new QueryClient();
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      ${infrastructure?.database === 'fireproof' ? '<FireproofProvider>' : ''}
-      <TooltipProvider>
-        <div className="min-h-screen bg-background">
-          <Header />
-          <MainContent />
-          <Footer />
-        </div>
-        <Toaster />
-        <Sonner />
-      </TooltipProvider>
-      ${infrastructure?.database === 'fireproof' ? '</FireproofProvider>' : ''}
-    </QueryClientProvider>
-  );
-}
-
-export default App;`;
-
-    // Generate Header component
-    components['Header.tsx'] = `import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-
-export const Header = () => {
-  return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between px-4">
-        <div className="flex items-center space-x-2">
-          <h1 className="text-xl font-bold gradient-text">${analysis.title}</h1>
-        </div>
-        <nav className="flex items-center space-x-4">
-          <Button variant="ghost">Home</Button>
-          <Button variant="ghost">About</Button>
-          <Button variant="outline">Get Started</Button>
-        </nav>
-      </div>
-    </header>
-  );
-};`;
-
-    // Generate MainContent component based on analysis
-    components['MainContent.tsx'] = `import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-${analysis.dataModels?.includes('User') ? "import { useAuth } from '@/hooks/useAuth';" : ''}
-${infrastructure?.database === 'fireproof' ? "import { useFireproofData } from '@/hooks/useFireproofData';" : ''}
-
-export const MainContent = () => {
-  ${analysis.dataModels?.includes('User') ? 'const { user, signIn, signOut } = useAuth();' : ''}
-  ${infrastructure?.database === 'fireproof' ? 'const { data, loading, error } = useFireproofData();' : ''}
-
-  return (
-    <main className="container px-4 py-8 mx-auto">
-      {/* Hero Section */}
-      <section className="text-center space-y-6 py-16">
-        <h2 className="text-4xl font-bold tracking-tight sm:text-5xl gradient-text">
-          ${analysis.title}
-        </h2>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          ${analysis.description}
-        </p>
-        <div className="flex flex-wrap justify-center gap-2 mt-4">
-          ${analysis.features?.map((feature: string) => `<Badge variant="secondary">${feature}</Badge>`).join('\n          ')}
-        </div>
-        <Button size="lg" className="mt-6">
-          Get Started
-        </Button>
-      </section>
-
-      {/* Features Grid */}
-      <section className="py-16">
-        <h3 className="text-3xl font-bold text-center mb-12">Features</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          ${analysis.features?.map((feature: string, i: number) => `
-          <Card className="glass">
-            <CardHeader>
-              <CardTitle className="text-lg">${feature}</CardTitle>
-              <CardDescription>
-                Discover the power of ${feature.toLowerCase()} in our application.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" size="sm">
-                Learn More
-              </Button>
-            </CardContent>
-          </Card>
-          `).join('')}
-        </div>
-      </section>
-
-      ${infrastructure?.database === 'fireproof' ? `
-      {/* Data Section */}
-      <section className="py-16">
-        <h3 className="text-3xl font-bold text-center mb-12">Your Data</h3>
-        {loading && <div className="text-center">Loading...</div>}
-        {error && <div className="text-center text-red-500">Error: {error}</div>}
-        {data && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.map((item: any, index: number) => (
-              <Card key={index} className="glass">
-                <CardContent className="p-4">
-                  <pre className="text-sm">{JSON.stringify(item, null, 2)}</pre>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
-      ` : ''}
-    </main>
-  );
-};`;
-
-    // Generate Footer component
-    components['Footer.tsx'] = `import React from 'react';
-
-export const Footer = () => {
-  return (
-    <footer className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex items-center justify-between px-4 py-6">
-        <p className="text-sm text-muted-foreground">
-          © 2024 ${analysis.title}. Built with Remixable.
-        </p>
-        <div className="flex items-center space-x-4">
-          <a href="#" className="text-sm text-muted-foreground hover:text-foreground">
-            Privacy
-          </a>
-          <a href="#" className="text-sm text-muted-foreground hover:text-foreground">
-            Terms
-          </a>
-        </div>
-      </div>
-    </footer>
-  );
-};`;
-
-    return components;
-  }
-
-  private async generateHooks(analysis: any, infrastructure?: any): Promise<Record<string, string>> {
-    const hooks: Record<string, string> = {};
-
-    // Generate useAuth hook if user management is needed
-    if (analysis.dataModels?.includes('User')) {
-      hooks['useAuth.ts'] = `import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
-
-export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
+      // Clean the response to extract JSON
+      const jsonMatch = generatedContent.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in response');
       }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
-  };
-
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: \`\${window.location.origin}/\`
-      }
-    });
-    return { error };
-  };
-
-  const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
-  };
-
-  return {
-    user,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-  };
-};`;
+      appData = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.error('Failed to parse OpenRouter response:', parseError);
+      // Fallback to structured generation
+      appData = await generateFallbackApp(prompt, category);
     }
 
-    // Generate Fireproof hook if selected
-    if (infrastructure?.database === 'fireproof') {
-      hooks['useFireproofData.ts'] = `import { useState, useEffect } from 'react';
-import { useFireproof } from '@fireproof/react';
-
-export const useFireproofData = () => {
-  const { database } = useFireproof('${analysis.title.toLowerCase().replace(/\s+/g, '-')}-db');
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const result = await database.allDocs();
-        setData(result.rows.map(row => row.doc));
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [database]);
-
-  const addData = async (doc: any) => {
-    try {
-      const result = await database.put(doc);
-      setData(prev => [...prev, result]);
-      return result;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      throw err;
-    }
-  };
-
-  const updateData = async (id: string, updates: any) => {
-    try {
-      const existing = await database.get(id);
-      const updated = { ...existing, ...updates };
-      const result = await database.put(updated);
-      setData(prev => prev.map(item => item._id === id ? result : item));
-      return result;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      throw err;
-    }
-  };
-
-  const deleteData = async (id: string) => {
-    try {
-      await database.remove(id);
-      setData(prev => prev.filter(item => item._id !== id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      throw err;
-    }
-  };
-
-  return {
-    data,
-    loading,
-    error,
-    addData,
-    updateData,
-    deleteData,
-    database
-  };
-};`;
+    // Generate additional components if needed
+    if (appData.code?.components && Object.keys(appData.code.components).length < 3) {
+      const additionalComponents = await generateAdditionalComponents(prompt, appData.title, OPENROUTER_API_KEY);
+      appData.code.components = { ...appData.code.components, ...additionalComponents };
     }
 
-    return hooks;
-  }
+    console.log('App generation successful:', appData.title);
 
-  private async generateUtils(analysis: any): Promise<Record<string, string>> {
-    return {
-      'api.ts': `export const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-app.vercel.app' 
-  : 'http://localhost:3000';
-
-export const api = {
-  async get(endpoint: string) {
-    const response = await fetch(\`\${API_BASE_URL}\${endpoint}\`);
-    if (!response.ok) {
-      throw new Error(\`HTTP error! status: \${response.status}\`);
-    }
-    return response.json();
-  },
-
-  async post(endpoint: string, data: any) {
-    const response = await fetch(\`\${API_BASE_URL}\${endpoint}\`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      throw new Error(\`HTTP error! status: \${response.status}\`);
-    }
-    return response.json();
-  },
-
-  async put(endpoint: string, data: any) {
-    const response = await fetch(\`\${API_BASE_URL}\${endpoint}\`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      throw new Error(\`HTTP error! status: \${response.status}\`);
-    }
-    return response.json();
-  },
-
-  async delete(endpoint: string) {
-    const response = await fetch(\`\${API_BASE_URL}\${endpoint}\`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      throw new Error(\`HTTP error! status: \${response.status}\`);
-    }
-    return response.json();
-  }
-};`
-    };
-  }
-
-  private async generateTypes(analysis: any): Promise<string> {
-    const dataModels = analysis.dataModels || [];
-    
-    let types = `// Generated TypeScript types for ${analysis.title}\n\n`;
-    
-    dataModels.forEach((model: string) => {
-      types += `export interface ${model} {\n`;
-      types += `  id: string;\n`;
-      types += `  createdAt: string;\n`;
-      types += `  updatedAt: string;\n`;
-      
-      // Add model-specific fields based on common patterns
-      if (model === 'User') {
-        types += `  email: string;\n`;
-        types += `  name?: string;\n`;
-        types += `  avatar?: string;\n`;
-      } else if (model === 'Post' || model === 'Content') {
-        types += `  title: string;\n`;
-        types += `  content: string;\n`;
-        types += `  authorId: string;\n`;
-        types += `  published: boolean;\n`;
-      } else {
-        types += `  name: string;\n`;
-        types += `  description?: string;\n`;
-      }
-      
-      types += `}\n\n`;
-    });
-
-    types += `export interface AppConfig {\n`;
-    types += `  name: string;\n`;
-    types += `  version: string;\n`;
-    types += `  features: string[];\n`;
-    types += `}\n`;
-
-    return types;
-  }
-
-  private async generateConfig(analysis: any, infrastructure?: any): Promise<string> {
-    return `// App configuration for ${analysis.title}
-
-export const appConfig = {
-  name: "${analysis.title}",
-  description: "${analysis.description}",
-  version: "1.0.0",
-  features: ${JSON.stringify(analysis.features || [], null, 2)},
-  
-  infrastructure: {
-    database: "${infrastructure?.database || 'supabase'}",
-    storage: "${infrastructure?.storage || 'supabase'}",
-    rpc: "${infrastructure?.rpc || 'alchemy'}",
-    paymaster: "${infrastructure?.paymaster || 'none'}"
-  },
-
-  api: {
-    baseUrl: process.env.NODE_ENV === 'production' 
-      ? 'https://your-app.vercel.app' 
-      : 'http://localhost:3000',
-    timeout: 10000
-  },
-
-  ui: {
-    theme: {
-      defaultMode: 'dark',
-      colors: {
-        primary: 'hsl(262.1, 83.3%, 57.8%)',
-        secondary: 'hsl(220, 14.3%, 95.9%)',
-        accent: 'hsl(142.1, 76.2%, 36.3%)'
-      }
-    }
-  }
-};`;
-  }
-
-  private async generateBackend(analysis: any, infrastructure?: any): Promise<any> {
-    const dataModels = analysis.dataModels || [];
-    let schema = '';
-    let edgeFunctions: Record<string, string> = {};
-    let rls: string[] = [];
-
-    // Generate database schema
-    if (dataModels.length > 0) {
-      schema += `-- Database schema for ${analysis.title}\n\n`;
-      
-      dataModels.forEach((model: string) => {
-        const tableName = model.toLowerCase() + 's';
-        schema += `CREATE TABLE IF NOT EXISTS public.${tableName} (\n`;
-        schema += `  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,\n`;
-        schema += `  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),\n`;
-        schema += `  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),\n`;
-        
-        if (model === 'User') {
-          schema += `  user_id UUID REFERENCES auth.users NOT NULL,\n`;
-          schema += `  email TEXT,\n`;
-          schema += `  name TEXT,\n`;
-          schema += `  avatar_url TEXT\n`;
-        } else if (model === 'Post' || model === 'Content') {
-          schema += `  title TEXT NOT NULL,\n`;
-          schema += `  content TEXT,\n`;
-          schema += `  user_id UUID REFERENCES auth.users NOT NULL,\n`;
-          schema += `  published BOOLEAN DEFAULT false\n`;
-        } else {
-          schema += `  name TEXT NOT NULL,\n`;
-          schema += `  description TEXT,\n`;
-          schema += `  user_id UUID REFERENCES auth.users NOT NULL\n`;
-        }
-        
-        schema += `);\n\n`;
-
-        // Enable RLS
-        schema += `ALTER TABLE public.${tableName} ENABLE ROW LEVEL SECURITY;\n\n`;
-
-        // Add RLS policies
-        rls.push(`CREATE POLICY "Users can view their own ${tableName}" ON public.${tableName} FOR SELECT USING (auth.uid() = user_id);`);
-        rls.push(`CREATE POLICY "Users can create their own ${tableName}" ON public.${tableName} FOR INSERT WITH CHECK (auth.uid() = user_id);`);
-        rls.push(`CREATE POLICY "Users can update their own ${tableName}" ON public.${tableName} FOR UPDATE USING (auth.uid() = user_id);`);
-        rls.push(`CREATE POLICY "Users can delete their own ${tableName}" ON public.${tableName} FOR DELETE USING (auth.uid() = user_id);`);
-
-        // Add update trigger
-        schema += `CREATE TRIGGER update_${tableName}_updated_at\n`;
-        schema += `  BEFORE UPDATE ON public.${tableName}\n`;
-        schema += `  FOR EACH ROW\n`;
-        schema += `  EXECUTE FUNCTION public.update_updated_at_column();\n\n`;
-      });
-    }
-
-    // Generate API edge functions
-    if (analysis.apiEndpoints?.length > 0) {
-      analysis.apiEndpoints.forEach((endpoint: string) => {
-        const functionName = endpoint.replace('/api/', '').replace(/\//g, '-');
-        edgeFunctions[functionName] = this.generateEdgeFunction(functionName, analysis);
-      });
-    }
-
-    return {
-      schema,
-      edgeFunctions,
-      rls
-    };
-  }
-
-  private generateEdgeFunction(functionName: string, analysis: any): string {
-    return `import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: { 
-        persistSession: false,
-        autoRefreshToken: false 
-      }
-    });
-
-    // Get user from auth header
-    const authHeader = req.headers.get('Authorization');
-    if (authHeader) {
-      const { data: { user }, error } = await supabase.auth.getUser(
-        authHeader.replace('Bearer ', '')
-      );
-      if (error) {
-        throw new Error('Unauthorized');
-      }
-    }
-
-    const { method } = req;
-    const url = new URL(req.url);
-
-    switch (method) {
-      case 'GET':
-        // Handle GET request for ${functionName}
-        const { data, error } = await supabase
-          .from('${functionName}')
-          .select('*');
-        
-        if (error) throw error;
-        
-        return new Response(JSON.stringify(data), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-
-      case 'POST':
-        // Handle POST request for ${functionName}
-        const body = await req.json();
-        const { data: insertData, error: insertError } = await supabase
-          .from('${functionName}')
-          .insert(body)
-          .select()
-          .single();
-        
-        if (insertError) throw insertError;
-        
-        return new Response(JSON.stringify(insertData), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-
-      default:
-        return new Response('Method not allowed', { 
-          status: 405,
-          headers: corsHeaders 
-        });
-    }
-
-  } catch (error) {
-    console.error('Error in ${functionName} function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-});`;
-  }
-
-  private async generateDeployment(analysis: any, infrastructure?: any): Promise<any> {
-    return {
-      envVars: {
-        'NEXT_PUBLIC_APP_NAME': analysis.title,
-        'NEXT_PUBLIC_APP_VERSION': '1.0.0',
-        'NEXT_PUBLIC_SUPABASE_URL': 'your-supabase-url',
-        'NEXT_PUBLIC_SUPABASE_ANON_KEY': 'your-supabase-anon-key',
-        ...(infrastructure?.rpc === 'alchemy' && {
-          'NEXT_PUBLIC_ALCHEMY_API_KEY': 'your-alchemy-key'
-        }),
-        ...(infrastructure?.database === 'fireproof' && {
-          'NEXT_PUBLIC_FIREPROOF_DB': analysis.title.toLowerCase().replace(/\s+/g, '-') + '-db'
-        })
-      },
-      buildCommands: [
-        'npm install',
-        'npm run build',
-        'npm run start'
-      ]
-    };
-  }
-}
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const generator = new AppGenerator();
-    const request: GenerateAppRequest = await req.json();
-    
-    console.log('Generating app:', request.prompt);
-    
-    const result = await generator.generateFullApp(request);
-    
     return new Response(JSON.stringify({
       success: true,
-      data: result
+      data: appData
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in generate-app function:', error);
-    return new Response(JSON.stringify({ 
-      success: false,
-      error: error.message 
+    
+    // Return fallback app on error
+    const fallbackApp = {
+      title: "Generated App",
+      description: "AI-powered web application",
+      features: ["Modern UI", "Responsive Design", "TypeScript", "Tailwind CSS"],
+      code: {
+        components: {
+          "App.tsx": `import React from 'react';
+import { Header } from './Header';
+import { HomePage } from './HomePage';
+import { Footer } from './Footer';
+
+function App() {
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <Header />
+      <HomePage />
+      <Footer />
+    </div>
+  );
+}
+
+export default App;`,
+          "HomePage.tsx": `import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+export const HomePage = () => {
+  return (
+    <main className="container mx-auto px-4 py-8">
+      <div className="text-center space-y-6">
+        <h1 className="text-4xl font-bold">Welcome to Your App</h1>
+        <p className="text-xl text-muted-foreground">Built with AI-powered generation</p>
+        <Button size="lg">Get Started</Button>
+      </div>
+    </main>
+  );
+};`
+        }
+      }
+    };
+
+    return new Response(JSON.stringify({
+      success: true,
+      data: fallbackApp,
+      fallback: true
     }), {
-      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
+
+async function generateFallbackApp(prompt: string, category: string) {
+  return {
+    title: extractAppTitle(prompt),
+    description: `AI-generated ${category} application based on: ${prompt}`,
+    features: ["Modern React UI", "TypeScript Support", "Responsive Design", "Tailwind Styling"],
+    code: {
+      components: {
+        "App.tsx": generateAppComponent(prompt),
+        "HomePage.tsx": generateHomeComponent(prompt),
+        "Header.tsx": generateHeaderComponent(prompt)
+      },
+      hooks: {
+        "useAppState.ts": generateAppStateHook()
+      },
+      utils: {
+        "helpers.ts": generateHelpers(),
+        "constants.ts": generateConstants(prompt)
+      },
+      types: generateTypes(),
+      config: generateConfig(prompt)
+    }
+  };
+}
+
+async function generateAdditionalComponents(prompt: string, appTitle: string, apiKey: string) {
+  const componentsPrompt = `Generate additional React components for the app "${appTitle}" based on "${prompt}". 
+
+Return only a JSON object with component names as keys and complete React component code as values:
+{
+  "ComponentName.tsx": "complete React component code with proper imports and TypeScript"
+}
+
+Generate 2-3 useful components that would enhance this specific app.`;
+
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'anthropic/claude-3.5-sonnet',
+        messages: [{ role: 'user', content: componentsPrompt }],
+        temperature: 0.7,
+        max_tokens: 4000,
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const content = data.choices[0].message.content;
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to generate additional components:', error);
+  }
+  
+  return {};
+}
+
+function extractAppTitle(prompt: string): string {
+  const words = prompt.split(' ').slice(0, 3);
+  return words.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') + ' App';
+}
+
+function generateAppComponent(prompt: string): string {
+  return `import React from 'react';
+import { Header } from './Header';
+import { HomePage } from './HomePage';
+import { Footer } from './Footer';
+import { Toaster } from '@/components/ui/toaster';
+
+function App() {
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <Header />
+      <main>
+        <HomePage />
+      </main>
+      <Footer />
+      <Toaster />
+    </div>
+  );
+}
+
+export default App;`;
+}
+
+function generateHomeComponent(prompt: string): string {
+  const title = extractAppTitle(prompt);
+  return `import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Sparkles } from 'lucide-react';
+
+export const HomePage = () => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleAction = () => {
+    setIsLoading(true);
+    setTimeout(() => setIsLoading(false), 2000);
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="text-center space-y-8">
+        <div className="space-y-4">
+          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            ${title}
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Welcome to your AI-generated application. Built with modern React, TypeScript, and Tailwind CSS.
+          </p>
+        </div>
+        
+        <div className="flex justify-center gap-4 flex-wrap">
+          <Badge variant="secondary">React</Badge>
+          <Badge variant="secondary">TypeScript</Badge>
+          <Badge variant="secondary">Tailwind</Badge>
+          <Badge variant="secondary">AI-Generated</Badge>
+        </div>
+
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5" />
+              Get Started
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={handleAction}
+              disabled={isLoading}
+              className="w-full"
+              size="lg"
+            >
+              {isLoading ? 'Loading...' : 'Start Using App'}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};`;
+}
+
+function generateHeaderComponent(prompt: string): string {
+  const title = extractAppTitle(prompt);
+  return `import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Menu, Sparkles } from 'lucide-react';
+
+export const Header = () => {
+  return (
+    <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-8 h-8 text-primary" />
+            <span className="text-xl font-bold">${title}</span>
+          </div>
+          
+          <nav className="hidden md:flex items-center gap-6">
+            <a href="#home" className="text-muted-foreground hover:text-foreground transition-colors">
+              Home
+            </a>
+            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
+              Features
+            </a>
+            <a href="#about" className="text-muted-foreground hover:text-foreground transition-colors">
+              About
+            </a>
+          </nav>
+          
+          <Button variant="outline" size="sm" className="md:hidden">
+            <Menu className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </header>
+  );
+};`;
+}
+
+function generateAppStateHook(): string {
+  return `import { useState, useCallback } from 'react';
+
+interface AppState {
+  isLoading: boolean;
+  user: any | null;
+  error: string | null;
+}
+
+export const useAppState = () => {
+  const [state, setState] = useState<AppState>({
+    isLoading: false,
+    user: null,
+    error: null
+  });
+
+  const setLoading = useCallback((loading: boolean) => {
+    setState(prev => ({ ...prev, isLoading: loading }));
+  }, []);
+
+  const setUser = useCallback((user: any) => {
+    setState(prev => ({ ...prev, user }));
+  }, []);
+
+  const setError = useCallback((error: string | null) => {
+    setState(prev => ({ ...prev, error }));
+  }, []);
+
+  return {
+    ...state,
+    setLoading,
+    setUser,
+    setError
+  };
+};`;
+}
+
+function generateHelpers(): string {
+  return `export const formatDate = (date: Date): string => {
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }).format(date);
+};
+
+export const truncateText = (text: string, maxLength: number): string => {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + '...';
+};
+
+export const generateId = (): string => {
+  return Math.random().toString(36).substr(2, 9);
+};
+
+export const sleep = (ms: number): Promise<void> => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};`;
+}
+
+function generateConstants(prompt: string): string {
+  return `export const APP_NAME = '${extractAppTitle(prompt)}';
+export const APP_VERSION = '1.0.0';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+
+export const ROUTES = {
+  HOME: '/',
+  ABOUT: '/about',
+  CONTACT: '/contact'
+} as const;
+
+export const THEMES = {
+  LIGHT: 'light',
+  DARK: 'dark',
+  SYSTEM: 'system'
+} as const;`;
+}
+
+function generateTypes(): string {
+  return `export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+export type Theme = 'light' | 'dark' | 'system';
+
+export interface AppConfig {
+  name: string;
+  version: string;
+  apiUrl: string;
+}`;
+}
+
+function generateConfig(prompt: string): string {
+  return `export const appConfig = {
+  name: '${extractAppTitle(prompt)}',
+  version: '1.0.0',
+  description: 'AI-generated web application',
+  author: 'Remixable AI',
+  homepage: '/',
+  repository: '',
+  license: 'MIT'
+};`;
+}
