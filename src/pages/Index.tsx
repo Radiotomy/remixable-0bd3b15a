@@ -4,6 +4,7 @@ import { CategoryTabs } from "@/components/CategoryTabs";
 import { TemplateCard } from "@/components/TemplateCard";
 import { ChatInterface } from "@/components/ChatInterface";
 import { AppPreview } from "@/components/AppPreview";
+import { GeneratedAppPreview } from "@/components/GeneratedAppPreview";
 import { ModelSelector, ModelConfig, ModelParameters } from "@/components/ModelSelector";
 import { InfrastructureWizard } from "@/components/InfrastructureWizard";
 import { templates, Template } from "@/data/templates";
@@ -17,7 +18,28 @@ import appIcon from "@/assets/app-icon.png";
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState("all");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedApp, setGeneratedApp] = useState<any>(null);
+  const [generatedApp, setGeneratedApp] = useState<{
+    title: string;
+    description: string;
+    features: string[];
+    code?: {
+      components: Record<string, string>;
+      hooks: Record<string, string>;
+      utils: Record<string, string>;
+      types: string;
+      config: string;
+    };
+    backend?: {
+      schema: string;
+      edgeFunctions: Record<string, string>;
+      rls: string[];
+    };
+    deployment?: {
+      envVars: Record<string, string>;
+      buildCommands: string[];
+    };
+    previewUrl?: string;
+  } | null>(null);
   const [selectedModels, setSelectedModels] = useState<{
     code?: ModelConfig;
     text?: ModelConfig;
@@ -49,30 +71,37 @@ const Index = () => {
     setGeneratedApp(null);
     
     try {
-      const { data, error } = await supabase.functions.invoke('openrouter-generate', {
+      const { data, error } = await supabase.functions.invoke('generate-app', {
         body: {
-          prompt: `Generate a React component for a ${template.title} app. ${template.description}. Use TypeScript, Tailwind CSS, and modern React patterns. Make it functional and well-structured.`,
-          model: selectedModels.code.id,
-          category: 'code',
-          parameters: {
-            temperature: 0.7,
-            max_tokens: 2000
-          }
+          prompt: `Create a ${template.title} app: ${template.description}. Include these features: ${template.features.join(', ')}`,
+          template: template.id,
+          category: template.category,
+          infrastructure: infrastructureConfig
         }
       });
 
       if (error) throw error;
+
+      console.log('Generation result:', data);
       
-      if (data.success) {
+      if (data.success && data.data) {
+        setGeneratedApp({
+          title: data.data.title,
+          description: data.data.description,
+          features: data.data.features,
+          code: data.data.code,
+          backend: data.data.backend,
+          deployment: data.data.deployment
+        });
+      } else {
+        console.error('Generation failed:', data.error);
+        // Fallback to basic generation
         setGeneratedApp({
           title: template.title,
           description: template.description,
           features: template.features,
-          previewUrl: "#",
-          code: data.data.content
+          previewUrl: "#"
         });
-      } else {
-        throw new Error(data.error || 'Generation failed');
       }
     } catch (error) {
       console.error('Error generating app:', error);
@@ -97,30 +126,36 @@ const Index = () => {
     setGeneratedApp(null);
     
     try {
-      const { data, error } = await supabase.functions.invoke('openrouter-generate', {
+      const { data, error } = await supabase.functions.invoke('generate-app', {
         body: {
-          prompt: `Generate a complete React application based on this description: "${prompt}". Use TypeScript, Tailwind CSS, and modern React patterns. Create functional components with proper state management.`,
-          model: selectedModels.code.id,
-          category: 'code',
-          parameters: {
-            temperature: 0.8,
-            max_tokens: 3000
-          }
+          prompt: `Create a web application: ${prompt}`,
+          category: 'custom',
+          infrastructure: infrastructureConfig
         }
       });
 
       if (error) throw error;
+
+      console.log('Generation result:', data);
       
-      if (data.success) {
+      if (data.success && data.data) {
+        setGeneratedApp({
+          title: data.data.title,
+          description: data.data.description,
+          features: data.data.features,
+          code: data.data.code,
+          backend: data.data.backend,
+          deployment: data.data.deployment
+        });
+      } else {
+        console.error('Generation failed:', data.error);
+        // Fallback to basic generation
         setGeneratedApp({
           title: "Custom AI App",
           description: `Generated app based on: "${prompt}"`,
           features: ["AI-Powered", "Custom Logic", "Modern UI", "Responsive Design", "Real-time Updates"],
-          previewUrl: "#",
-          code: data.data.content
+          previewUrl: "#"
         });
-      } else {
-        throw new Error(data.error || 'Generation failed');
       }
     } catch (error) {
       console.error('Error generating app:', error);
@@ -330,7 +365,7 @@ const Index = () => {
                 <div className="h-px bg-gradient-to-r from-border to-transparent flex-1" />
               </div>
               
-              <AppPreview 
+              <GeneratedAppPreview 
                 isGenerating={isGenerating}
                 generatedApp={generatedApp}
               />
