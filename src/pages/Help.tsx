@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   Search, BookOpen, Code, Coins, Settings, CreditCard, MessageCircle, 
   Mail, Phone, Zap, Shield, Globe, Rocket, Users, TrendingUp,
-  ChevronRight, ExternalLink, Play, Download, User, LogIn, LogOut
+  ChevronRight, ExternalLink, Play, Download, User, LogIn, LogOut, Clock
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,8 +57,8 @@ const Help = () => {
 
   const helpSections = [
     { id: "overview", title: "Getting Started", icon: BookOpen },
-    { id: "tokenomics", title: "Tokenomics", icon: Coins },
     { id: "integrations", title: "Integrations", icon: Code },
+    { id: "tokenomics", title: "Tokenomics", icon: Coins },
     { id: "pricing", title: "Pricing & Billing", icon: CreditCard },
     { id: "deployment", title: "Deployment", icon: Rocket },
     { id: "support", title: "Support", icon: MessageCircle }
@@ -88,26 +88,30 @@ const Help = () => {
     }
   };
 
-  const faqs = [
+const faqs = [
     {
       question: "How do I create my first app?",
-      answer: "Simply describe your app idea in natural language or choose from our pre-built templates. Our AI will generate a fully functional app with smart contracts and deployment ready code."
+      answer: "Simply describe your app idea in natural language or choose from our pre-built templates. Our AI will generate a fully functional app with React, TypeScript, and Tailwind CSS. Choose from 18+ templates across media, sports, social, crypto, and finance categories."
     },
     {
       question: "What makes Remixable different from other no-code platforms?",
-      answer: "Remixable is specifically built for the BASE ecosystem with native Web3 integration, tokenomics, and Farcaster Mini App support. Every app comes with built-in token economics."
+      answer: "Remixable is built for Web3 with native BASE blockchain integration, built-in tokenomics, Farcaster Mini App support, and comprehensive infrastructure wizard. It includes Supabase backend, wallet connectivity, and smart contract deployment."
     },
     {
-      question: "How does the 85/10/5 revenue model work?",
-      answer: "When users interact with your app and generate revenue through tokens or transactions, 85% goes to you (the builder), 10% is distributed to token holders as rewards, and 5% supports platform development."
+      question: "What integrations are currently available?",
+      answer: "Ready integrations include Supabase (database/auth), Fireproof (local-first DB), BASE Chain, Wallet Connect, USDC payments, OpenRouter AI, and Stripe payments. Coming soon: OpenAI, social media APIs, communication tools, and DeFi protocols."
     },
     {
-      question: "Can I deploy my app to custom domains?",
-      answer: "Yes! Pro and Enterprise plans include custom domain deployment with SSL certificates. You can deploy to Vercel, Netlify, or any hosting provider."
+      question: "What backend and infrastructure options do I get?",
+      answer: "Choose from multiple database options (Fireproof, Supabase, OrbitDB), RPC providers (Alchemy, QuickNode), storage solutions (IPFS, Arweave, Supabase), and paymaster services for gasless transactions on BASE."
     },
     {
-      question: "What BASE integrations are supported?",
-      answer: "Full OnchainKit integration, Smart Wallet support, Gasless transactions, BASE Names Service, and automatic Farcaster Mini App compatibility."
+      question: "How does deployment work?",
+      answer: "One-click deployment to Vercel with automatic GitHub CI/CD setup. Custom domains supported. Deploy as Farcaster Mini Apps with frame endpoints and manifest configuration. Full edge function and backend deployment included."
+    },
+    {
+      question: "What subscription plans are available?",
+      answer: "Starter ($9/month): 5 projects, 100 generations. Pro ($29/month): 25 projects, 500 generations, custom domains. Enterprise ($99/month): unlimited projects, priority support, custom integrations. All plans include BASE integration and Farcaster support."
     }
   ];
 
@@ -199,12 +203,12 @@ const Help = () => {
           <div className="lg:col-span-3 space-y-8">
             {activeSection === "overview" && (
               <div className="space-y-6">
-                <div>
-                  <h1 className="text-3xl font-bold mb-2">Getting Started with Remixable</h1>
-                  <p className="text-muted-foreground">
-                    Build and deploy AI-powered apps on the BASE network with built-in tokenomics
-                  </p>
-                </div>
+                  <div>
+                    <h1 className="text-3xl font-bold mb-2">Getting Started with Remixable</h1>
+                    <p className="text-muted-foreground">
+                      Build and deploy full-stack React apps with AI assistance, BASE blockchain integration, and comprehensive infrastructure options
+                    </p>
+                  </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <Card className="group hover:shadow-lg transition-shadow">
@@ -253,21 +257,26 @@ const Help = () => {
                     <CardTitle>Platform Overview</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid md:grid-cols-3 gap-4">
+                    <div className="grid md:grid-cols-4 gap-4">
                       <div className="text-center p-4 rounded-lg border border-border/50">
                         <Code className="w-8 h-8 text-primary mx-auto mb-2" />
                         <h3 className="font-semibold">AI Code Generation</h3>
-                        <p className="text-sm text-muted-foreground">Natural language to full-stack apps</p>
+                        <p className="text-sm text-muted-foreground">18+ templates, React + TypeScript</p>
                       </div>
                       <div className="text-center p-4 rounded-lg border border-border/50">
-                        <Coins className="w-8 h-8 text-accent mx-auto mb-2" />
-                        <h3 className="font-semibold">Built-in Tokenomics</h3>
-                        <p className="text-sm text-muted-foreground">Every app gets its own token economy</p>
+                        <Settings className="w-8 h-8 text-accent mx-auto mb-2" />
+                        <h3 className="font-semibold">Infrastructure Wizard</h3>
+                        <p className="text-sm text-muted-foreground">Database, RPC, storage options</p>
                       </div>
                       <div className="text-center p-4 rounded-lg border border-border/50">
-                        <Rocket className="w-8 h-8 text-primary mx-auto mb-2" />
+                        <Zap className="w-8 h-8 text-primary mx-auto mb-2" />
+                        <h3 className="font-semibold">BASE Integration</h3>
+                        <p className="text-sm text-muted-foreground">Wallet connect, gasless txns</p>
+                      </div>
+                      <div className="text-center p-4 rounded-lg border border-border/50">
+                        <Rocket className="w-8 h-8 text-accent mx-auto mb-2" />
                         <h3 className="font-semibold">One-Click Deploy</h3>
-                        <p className="text-sm text-muted-foreground">Deploy to BASE network instantly</p>
+                        <p className="text-sm text-muted-foreground">Vercel + GitHub CI/CD</p>
                       </div>
                     </div>
                   </CardContent>
@@ -286,6 +295,183 @@ const Help = () => {
                         </AccordionItem>
                       ))}
                     </Accordion>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {activeSection === "integrations" && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">Integrations & Infrastructure</h1>
+                  <p className="text-muted-foreground">
+                    Connect to blockchain networks, databases, storage solutions, and AI services
+                  </p>
+                </div>
+
+                {/* Ready Integrations */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-green-500" />
+                      Available Now
+                    </CardTitle>
+                    <CardDescription>
+                      Production-ready integrations you can use immediately
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Backend & Database */}
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-primary">Backend & Database</h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="p-4 border rounded-lg">
+                          <h4 className="font-medium">Supabase</h4>
+                          <p className="text-sm text-muted-foreground">PostgreSQL database, authentication, real-time, file storage</p>
+                          <Badge variant="outline" className="mt-2">Free Tier</Badge>
+                        </div>
+                        <div className="p-4 border rounded-lg">
+                          <h4 className="font-medium">Fireproof</h4>
+                          <p className="text-sm text-muted-foreground">Local-first database with real-time sync, encryption</p>
+                          <Badge variant="outline" className="mt-2">Free</Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Web3 & Blockchain */}
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-primary">Web3 & Blockchain</h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="p-4 border rounded-lg">
+                          <h4 className="font-medium">BASE Chain</h4>
+                          <p className="text-sm text-muted-foreground">Ethereum L2, OnchainKit integration, gasless transactions</p>
+                          <Badge variant="outline" className="mt-2">Free</Badge>
+                        </div>
+                        <div className="p-4 border rounded-lg">
+                          <h4 className="font-medium">Wallet Connect</h4>
+                          <p className="text-sm text-muted-foreground">Coinbase Wallet, MetaMask, WalletConnect support</p>
+                          <Badge variant="outline" className="mt-2">Free</Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* AI & Payments */}
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-primary">AI & Payments</h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="p-4 border rounded-lg">
+                          <h4 className="font-medium">OpenRouter AI</h4>
+                          <p className="text-sm text-muted-foreground">20+ AI models: GPT-4, Claude, Gemini, Llama</p>
+                          <Badge variant="outline" className="mt-2">API Key</Badge>
+                        </div>
+                        <div className="p-4 border rounded-lg">
+                          <h4 className="font-medium">Stripe Payments</h4>
+                          <p className="text-sm text-muted-foreground">Credit cards, subscriptions, global payment processing</p>
+                          <Badge variant="outline" className="mt-2">API Key</Badge>
+                        </div>
+                        <div className="p-4 border rounded-lg">
+                          <h4 className="font-medium">USDC Payments</h4>
+                          <p className="text-sm text-muted-foreground">Cryptocurrency payments with USDC stablecoin</p>
+                          <Badge variant="outline" className="mt-2">Free</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Infrastructure Options */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="w-5 h-5 text-primary" />
+                      Infrastructure Wizard
+                    </CardTitle>
+                    <CardDescription>
+                      Choose from multiple options for database, RPC, storage, and paymaster services
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <h4 className="font-medium">Database Options</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li>• Fireproof (local-first, free)</li>
+                          <li>• Supabase (PostgreSQL, freemium)</li>
+                          <li>• OrbitDB (decentralized, IPFS)</li>
+                          <li>• Gun.js (real-time, P2P)</li>
+                          <li>• PlanetScale (serverless MySQL)</li>
+                        </ul>
+                      </div>
+                      <div className="space-y-3">
+                        <h4 className="font-medium">RPC Providers</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li>• Alchemy (300M requests/month)</li>
+                          <li>• QuickNode (50M requests/month)</li>
+                          <li>• Chainbase (100M requests/month)</li>
+                          <li>• Base Public RPC (free, rate limited)</li>
+                        </ul>
+                      </div>
+                      <div className="space-y-3">
+                        <h4 className="font-medium">Storage Solutions</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li>• IPFS + Pinata (decentralized)</li>
+                          <li>• Arweave (permanent storage)</li>
+                          <li>• Filecoin (free tier available)</li>
+                          <li>• Supabase Storage (S3 compatible)</li>
+                        </ul>
+                      </div>
+                      <div className="space-y-3">
+                        <h4 className="font-medium">Paymaster Services</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li>• Coinbase Paymaster ($10 credits/month)</li>
+                          <li>• Pimlico (100 UserOps/month free)</li>
+                          <li>• Alchemy Account Kit (1000 txns/month)</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Coming Soon */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-yellow-500" />
+                      Coming Soon
+                    </CardTitle>
+                    <CardDescription>
+                      Upcoming integrations in development
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <h4 className="font-medium">AI & ML</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li>• OpenAI GPT-4</li>
+                          <li>• Anthropic Claude</li>
+                          <li>• Google Gemini</li>
+                        </ul>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Social & Communication</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li>• Twitter/X API</li>
+                          <li>• Discord Bot</li>
+                          <li>• SendGrid Email</li>
+                          <li>• Twilio SMS</li>
+                        </ul>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-medium">DeFi & Web3</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li>• Uniswap V3</li>
+                          <li>• Aave Protocol</li>
+                          <li>• The Graph</li>
+                          <li>• ENS Domains</li>
+                        </ul>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </div>

@@ -283,10 +283,11 @@ export const SupportPortal = () => {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm">
-                  <li>• Creating your first app</li>
-                  <li>• Understanding tokenomics</li>
-                  <li>• BASE integration guide</li>
-                  <li>• Deployment walkthrough</li>
+                  <li>• Creating your first app from templates</li>
+                  <li>• Using the AI chat interface</li>
+                  <li>• Infrastructure wizard setup</li>
+                  <li>• BASE blockchain integration</li>
+                  <li>• Farcaster Mini App deployment</li>
                 </ul>
               </CardContent>
             </Card>
@@ -298,10 +299,11 @@ export const SupportPortal = () => {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm">
-                  <li>• Custom domain setup</li>
-                  <li>• API integrations</li>
+                  <li>• Integration marketplace usage</li>
+                  <li>• Advanced AI model selection</li>
+                  <li>• Database and storage options</li>
                   <li>• Smart contract deployment</li>
-                  <li>• Revenue optimization</li>
+                  <li>• Custom domain configuration</li>
                 </ul>
               </CardContent>
             </Card>
@@ -313,10 +315,11 @@ export const SupportPortal = () => {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm">
-                  <li>• Deployment failures</li>
-                  <li>• Token creation errors</li>
-                  <li>• BASE network issues</li>
-                  <li>• Payment problems</li>
+                  <li>• Template generation failures</li>
+                  <li>• AI model connection issues</li>
+                  <li>• Infrastructure setup problems</li>
+                  <li>• BASE network connectivity</li>
+                  <li>• Deployment and hosting issues</li>
                 </ul>
               </CardContent>
             </Card>
@@ -328,10 +331,11 @@ export const SupportPortal = () => {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm">
-                  <li>• REST API endpoints</li>
-                  <li>• Webhook configuration</li>
-                  <li>• SDK usage examples</li>
-                  <li>• Rate limits & quotas</li>
+                  <li>• Supabase edge functions</li>
+                  <li>• OpenRouter AI integration</li>
+                  <li>• Stripe payment webhooks</li>
+                  <li>• BASE chain interactions</li>
+                  <li>• Template generation APIs</li>
                 </ul>
               </CardContent>
             </Card>
