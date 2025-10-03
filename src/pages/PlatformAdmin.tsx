@@ -7,7 +7,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
-import { Coins, Rocket, Settings, Database, Shield, ExternalLink } from 'lucide-react'
+import { useAdminAuth } from "@/hooks/useAdminAuth"
+import { Coins, Rocket, Database, Shield, ExternalLink, Loader2 } from 'lucide-react'
 
 interface ContractStatus {
   name: string
@@ -20,6 +21,7 @@ interface ContractStatus {
 }
 
 export default function PlatformAdmin() {
+  const { isAdmin, isLoading } = useAdminAuth()
   const [contracts, setContracts] = useState<ContractStatus[]>([
     { name: 'RMX Platform Token', deployed: false, verified: false },
     { name: 'Token Factory', deployed: false, verified: false },
@@ -33,6 +35,23 @@ export default function PlatformAdmin() {
     totalDeployments: 0
   })
   const { toast } = useToast()
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Verifying admin access...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // If not admin, don't render anything (hook will redirect)
+  if (!isAdmin) {
+    return null
+  }
 
   useEffect(() => {
     fetchPlatformStats()

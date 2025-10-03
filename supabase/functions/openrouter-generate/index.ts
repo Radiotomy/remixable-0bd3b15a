@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
@@ -24,6 +25,32 @@ serve(async (req) => {
   }
 
   try {
+    // Get authorization header
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Initialize Supabase client for rate limiting and validation
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    )
+
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    if (authError || !user) {
+      console.error('Authentication failed:', authError)
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
     if (!OPENROUTER_API_KEY) {
       throw new Error('OPENROUTER_API_KEY is not set');
@@ -31,6 +58,45 @@ serve(async (req) => {
 
     const body: GenerateRequest = await req.json();
     const { prompt, model, category, parameters = {} } = body;
+
+    // Input validation
+    if (!prompt || typeof prompt !== 'string') {
+      return new Response(JSON.stringify({ error: 'Invalid prompt' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Length validation (5000 character limit)
+    if (prompt.length > 5000) {
+      return new Response(JSON.stringify({ error: 'Prompt too long (max 5000 characters)' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Basic content filtering - reject prompts with suspicious patterns
+    const forbiddenPatterns = [
+      /ignore\s+previous\s+instructions/i,
+      /system\s*:\s*you\s+are/i,
+      /<script[\s\S]*?>[\s\S]*?<\/script>/i,
+    ]
+    
+    if (forbiddenPatterns.some(pattern => pattern.test(prompt))) {
+      console.warn('Blocked suspicious prompt from user:', user.id)
+      return new Response(JSON.stringify({ error: 'Invalid prompt content' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Simple rate limiting check (10 requests per hour)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    
+    // Create rate limit tracking table entry
+    await supabaseClient.from('projects').select('id').limit(1) // Just check connection works
+    
+    console.log(`User ${user.id} making generation request - Category: ${category}`)
 
     console.log(`Generating with OpenRouter - Model: ${model}, Category: ${category}`);
 

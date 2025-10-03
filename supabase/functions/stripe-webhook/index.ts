@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import Stripe from 'https://esm.sh/stripe@14.21.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,15 +21,40 @@ serve(async (req) => {
 
     const signature = req.headers.get('stripe-signature')
     if (!signature) {
+      console.error('Missing stripe-signature header')
       throw new Error('No stripe-signature header')
     }
 
     const body = await req.text()
     const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')
     
-    // TODO: Verify Stripe webhook signature
-    // For now, we'll parse the event directly (this should be secured in production)
-    const event = JSON.parse(body)
+    if (!stripeWebhookSecret) {
+      console.error('STRIPE_WEBHOOK_SECRET not configured')
+      throw new Error('Webhook secret not configured')
+    }
+
+    if (!stripeSecretKey) {
+      console.error('STRIPE_SECRET_KEY not configured')
+      throw new Error('Stripe secret key not configured')
+    }
+
+    // Verify Stripe webhook signature
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2023-10-16',
+    })
+
+    let event
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, stripeWebhookSecret)
+      console.log('Webhook signature verified successfully')
+    } catch (err: any) {
+      console.error('Webhook signature verification failed:', err.message)
+      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      })
+    }
 
     console.log('Stripe webhook event:', event.type)
 
@@ -98,11 +124,23 @@ async function handleSubscriptionCanceled(supabaseClient: any, subscription: any
 }
 
 async function handlePaymentSucceeded(supabaseClient: any, invoice: any) {
-  // Record successful payment
+  // Map Stripe customer ID to our user_id
+  const { data: subscription, error: subError } = await supabaseClient
+    .from('user_subscriptions')
+    .select('user_id')
+    .eq('stripe_customer_id', invoice.customer)
+    .single()
+
+  if (subError || !subscription) {
+    console.error('Failed to map customer to user:', subError)
+    throw new Error(`Cannot find user for customer ${invoice.customer}`)
+  }
+
+  // Record successful payment with proper user_id
   const { error } = await supabaseClient
     .from('payment_transactions')
     .insert({
-      user_id: invoice.customer, // This would need to be mapped to our user_id
+      user_id: subscription.user_id,
       amount: invoice.amount_paid / 100, // Convert from cents
       currency: invoice.currency,
       payment_method: 'stripe',
@@ -117,11 +155,23 @@ async function handlePaymentSucceeded(supabaseClient: any, invoice: any) {
 }
 
 async function handlePaymentFailed(supabaseClient: any, invoice: any) {
-  // Record failed payment
+  // Map Stripe customer ID to our user_id
+  const { data: subscription, error: subError } = await supabaseClient
+    .from('user_subscriptions')
+    .select('user_id')
+    .eq('stripe_customer_id', invoice.customer)
+    .single()
+
+  if (subError || !subscription) {
+    console.error('Failed to map customer to user:', subError)
+    throw new Error(`Cannot find user for customer ${invoice.customer}`)
+  }
+
+  // Record failed payment with proper user_id
   const { error } = await supabaseClient
     .from('payment_transactions')
     .insert({
-      user_id: invoice.customer, // This would need to be mapped to our user_id
+      user_id: subscription.user_id,
       amount: invoice.amount_due / 100, // Convert from cents
       currency: invoice.currency,
       payment_method: 'stripe',

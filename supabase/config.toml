@@ -13,7 +13,7 @@ shadow_port = 54320
 major_version = 15
 
 [functions.openrouter-generate]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-app]
 verify_jwt = false
