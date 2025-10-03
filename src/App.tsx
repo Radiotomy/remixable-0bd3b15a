@@ -11,6 +11,7 @@ import Pricing from "./pages/Pricing";
 import Integrations from "./pages/Integrations";
 import Help from "./pages/Help";
 import PlatformAdmin from "./pages/PlatformAdmin";
+import Workspace from "./pages/Workspace";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/workspace" element={<Workspace />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/integrations" element={<Integrations />} />
             <Route path="/help" element={<Help />} />

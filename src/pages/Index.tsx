@@ -260,6 +260,12 @@ const Index = () => {
                 </Button>
                 {user ? (
                   <div className="flex items-center gap-2">
+                    <Button variant="default" size="sm" asChild>
+                      <Link to="/workspace" className="flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        My Projects
+                      </Link>
+                    </Button>
                     <Button variant="ghost" size="sm" className="flex items-center gap-2">
                       <User className="w-4 h-4" />
                       {user.email}
