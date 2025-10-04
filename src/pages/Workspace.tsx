@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, LogOut } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, LogOut, FolderOpen, Plus } from 'lucide-react';
 import { ProjectDashboard } from '@/components/ProjectDashboard';
+import { WorkspaceBuilder } from '@/components/WorkspaceBuilder';
 import { useToast } from '@/hooks/use-toast';
 
 const Workspace = () => {
@@ -99,10 +101,29 @@ const Workspace = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <ProjectDashboard 
-          onCreateNew={handleCreateNew}
-          onOpenProject={handleOpenProject}
-        />
+        <Tabs defaultValue="projects" className="w-full">
+          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
+            <TabsTrigger value="projects" className="flex items-center gap-2">
+              <FolderOpen className="h-4 w-4" />
+              My Projects
+            </TabsTrigger>
+            <TabsTrigger value="create" className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Create New
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="projects">
+            <ProjectDashboard 
+              onCreateNew={handleCreateNew}
+              onOpenProject={handleOpenProject}
+            />
+          </TabsContent>
+          
+          <TabsContent value="create">
+            <WorkspaceBuilder user={user} />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

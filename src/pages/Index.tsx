@@ -1,20 +1,10 @@
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useProjectManager } from "@/hooks/useProjectManager";
 import { Button } from "@/components/ui/button";
-import { CategoryTabs } from "@/components/CategoryTabs";
-import { TemplateCard } from "@/components/TemplateCard";
-import { ChatInterface } from "@/components/ChatInterface";
-import { AppPreview } from "@/components/AppPreview";
-import { GeneratedAppPreview } from "@/components/GeneratedAppPreview";
-import { ModelSelector, ModelConfig, ModelParameters } from "@/components/ModelSelector";
-import { InfrastructureWizard } from "@/components/InfrastructureWizard";
-import { templates, Template } from "@/data/templates";
-import { cn } from "@/lib/utils";
-import { Sparkles, Zap, Github, Twitter, LogIn, LogOut, User } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Sparkles, Zap, Github, Twitter, LogIn, LogOut, User, Code2, Rocket, Layers } from "lucide-react";
 import { Link } from "react-router-dom";
 import { LiveChatWidget } from "@/components/LiveChatWidget";
 import heroBackground from "@/assets/hero-background.jpg";
@@ -23,41 +13,8 @@ const appIcon = `/icons/app-icon.png?v=${Date.now()}`;
 const wordmark = `/icons/wordmark.png?v=${Date.now()}`;
 
 const Index = () => {
-  const [activeCategory, setActiveCategory] = useState("all");
-  const [isGenerating, setIsGenerating] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const { toast } = useToast();
-  const { saveProject } = useProjectManager();
-  const [generatedApp, setGeneratedApp] = useState<{
-    title: string;
-    description: string;
-    features: string[];
-    code?: {
-      components: Record<string, string>;
-      hooks: Record<string, string>;
-      utils: Record<string, string>;
-      types: string;
-      config: string;
-    };
-    backend?: {
-      schema: string;
-      edgeFunctions: Record<string, string>;
-      rls: string[];
-    };
-    deployment?: {
-      envVars: Record<string, string>;
-      buildCommands: string[];
-    };
-    previewUrl?: string;
-  } | null>(null);
-  const [selectedModels, setSelectedModels] = useState<{
-    code?: ModelConfig;
-    text?: ModelConfig;
-    image?: ModelConfig;
-  }>({});
-  const [showModelSelector, setShowModelSelector] = useState(false);
-  const [showInfrastructureWizard, setShowInfrastructureWizard] = useState(false);
-  const [infrastructureConfig, setInfrastructureConfig] = useState<any>(null);
 
   useEffect(() => {
     // Get initial session
@@ -91,126 +48,6 @@ const Index = () => {
     }
   };
 
-  const filteredTemplates = activeCategory === "all" 
-    ? templates 
-    : templates.filter(template => template.category === activeCategory);
-
-  const handleModelSelect = (category: string, model: ModelConfig, parameters: ModelParameters) => {
-    setSelectedModels(prev => ({
-      ...prev,
-      [category]: model
-    }));
-    console.log(`Selected ${category} model:`, model.name, 'with parameters:', parameters);
-  };
-
-  const handleTemplateSelect = async (template: Template) => {
-    if (!selectedModels.code) {
-      setShowModelSelector(true);
-      return;
-    }
-
-    setIsGenerating(true);
-    setGeneratedApp(null);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-app', {
-        body: {
-          prompt: `Create a ${template.title} app: ${template.description}. Include these features: ${template.features.join(', ')}`,
-          template: template.id,
-          category: template.category,
-          infrastructure: infrastructureConfig
-        }
-      });
-
-      if (error) throw error;
-
-      console.log('Generation result:', data);
-      
-      if (data.success && data.data) {
-        setGeneratedApp({
-          title: data.data.title,
-          description: data.data.description,
-          features: data.data.features,
-          code: data.data.code,
-          backend: data.data.backend,
-          deployment: data.data.deployment
-        });
-      } else {
-        console.error('Generation failed:', data.error);
-        // Fallback to basic generation
-        setGeneratedApp({
-          title: template.title,
-          description: template.description,
-          features: template.features,
-          previewUrl: "#"
-        });
-      }
-    } catch (error) {
-      console.error('Error generating app:', error);
-      // Fallback to mock generation
-      setGeneratedApp({
-        title: template.title,
-        description: template.description,
-        features: template.features,
-        previewUrl: "#"
-      });
-    }
-    setIsGenerating(false);
-  };
-
-  const handleChatGenerate = async (prompt: string) => {
-    if (!selectedModels.code) {
-      setShowModelSelector(true);
-      return;
-    }
-
-    setIsGenerating(true);
-    setGeneratedApp(null);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-app', {
-        body: {
-          prompt: `Create a web application: ${prompt}`,
-          category: 'custom',
-          infrastructure: infrastructureConfig
-        }
-      });
-
-      if (error) throw error;
-
-      console.log('Generation result:', data);
-      
-      if (data.success && data.data) {
-        setGeneratedApp({
-          title: data.data.title,
-          description: data.data.description,
-          features: data.data.features,
-          code: data.data.code,
-          backend: data.data.backend,
-          deployment: data.data.deployment
-        });
-      } else {
-        console.error('Generation failed:', data.error);
-        // Fallback to basic generation
-        setGeneratedApp({
-          title: "Custom AI App",
-          description: `Generated app based on: "${prompt}"`,
-          features: ["AI-Powered", "Custom Logic", "Modern UI", "Responsive Design", "Real-time Updates"],
-          previewUrl: "#"
-        });
-      }
-    } catch (error) {
-      console.error('Error generating app:', error);
-      // Fallback to mock generation
-      setGeneratedApp({
-        title: "Custom AI App",
-        description: `Generated app based on: "${prompt}"`,
-        features: ["AI-Powered", "Custom Logic", "Modern UI", "Responsive Design", "Real-time Updates"],
-        previewUrl: "#"
-      });
-    }
-    setIsGenerating(false);
-  };
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -242,13 +79,6 @@ const Index = () => {
                 <Button variant="outline" size="sm" className="hidden sm:flex">
                   <Twitter className="w-4 h-4 mr-2" />
                   Twitter
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowInfrastructureWizard(!showInfrastructureWizard)}
-                >
-                  Infrastructure
                 </Button>
                 <Button variant="outline" size="sm" asChild>
                   <Link to="/integrations">
@@ -298,26 +128,51 @@ const Index = () => {
 
         {/* Hero Section */}
         <section 
-          className="py-20 px-4 relative"
+          className="py-32 px-4 relative"
           style={{
-            backgroundImage: `linear-gradient(rgba(36, 36, 49, 0.8), rgba(36, 36, 49, 0.9)), url(${heroBackground})`,
+            backgroundImage: `linear-gradient(rgba(36, 36, 49, 0.9), rgba(36, 36, 49, 0.95)), url(${heroBackground})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundAttachment: 'fixed'
           }}
         >
-          <div className="container mx-auto text-center space-y-8 relative z-10">
-            <div className="space-y-4">
-              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+          <div className="container mx-auto text-center space-y-12 relative z-10">
+            <div className="space-y-6">
+              <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
                 Build Any App with AI
               </h1>
-              <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
                 Generate fully functional apps instantly using natural language. 
-                Integrated with Farcaster Mini Apps and Base App ecosystem.
+                No coding required. Integrated with Farcaster Mini Apps and Base App ecosystem.
               </p>
             </div>
             
-            <div className="flex flex-wrap justify-center gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              {user ? (
+                <Button size="lg" className="text-lg px-8 py-6" asChild>
+                  <Link to="/workspace">
+                    <Rocket className="w-5 h-5 mr-2" />
+                    Go to Workspace
+                  </Link>
+                </Button>
+              ) : (
+                <>
+                  <Button size="lg" className="text-lg px-8 py-6" asChild>
+                    <Link to="/auth">
+                      <Sparkles className="w-5 h-5 mr-2" />
+                      Start Building for Free
+                    </Link>
+                  </Button>
+                  <Button size="lg" variant="outline" className="text-lg px-8 py-6" asChild>
+                    <Link to="/pricing">
+                      View Pricing
+                    </Link>
+                  </Button>
+                </>
+              )}
+            </div>
+            
+            <div className="flex flex-wrap justify-center gap-4 mt-8">
               {["Media", "Sports", "Social", "Crypto", "Finance", "Utility"].map((category) => (
                 <div key={category} className="px-4 py-2 glass rounded-full text-sm font-medium backdrop-blur-md">
                   {category} Apps
@@ -327,157 +182,85 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Main Content */}
-        <main className="container mx-auto px-4 pb-20">
-          <div className="space-y-8">
-            {/* Category Navigation */}
-            <div className="flex justify-center">
-              <CategoryTabs 
-                activeCategory={activeCategory}
-                onCategoryChange={setActiveCategory}
-              />
+        {/* Features Section */}
+        <section className="py-20 px-4">
+          <div className="container mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-5xl font-bold mb-4">
+                Everything You Need to Build
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Powerful AI-driven development platform with all the tools you need
+              </p>
             </div>
-
-            {/* Model Selector */}
-            {showModelSelector && (
-              <div className="mb-8">
-                <ModelSelector
-                  onModelSelect={handleModelSelect}
-                  selectedModels={selectedModels}
-                />
-                <div className="mt-4 text-center">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowModelSelector(false)}
-                  >
-                    Hide Model Selection
-                  </Button>
+            
+            <div className="grid md:grid-cols-3 gap-8">
+              <Card className="p-8 space-y-4 hover:shadow-lg transition-shadow">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Code2 className="w-6 h-6 text-primary" />
                 </div>
-              </div>
-            )}
+                <h3 className="text-xl font-bold">AI-Powered Generation</h3>
+                <p className="text-muted-foreground">
+                  Describe your app in natural language and watch AI generate production-ready code instantly.
+                </p>
+              </Card>
+              
+              <Card className="p-8 space-y-4 hover:shadow-lg transition-shadow">
+                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Layers className="w-6 h-6 text-accent" />
+                </div>
+                <h3 className="text-xl font-bold">Full-Stack Templates</h3>
+                <p className="text-muted-foreground">
+                  Start with pre-built templates for any category - from social apps to crypto tools.
+                </p>
+              </Card>
+              
+              <Card className="p-8 space-y-4 hover:shadow-lg transition-shadow">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Rocket className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold">One-Click Deploy</h3>
+                <p className="text-muted-foreground">
+                  Deploy your apps to production with integrated Farcaster and Base ecosystem support.
+                </p>
+              </Card>
+            </div>
+          </div>
+        </section>
 
-            {!showModelSelector && (
-              <div className="mb-6 text-center">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowModelSelector(true)}
-                >
-                  Configure AI Models ({Object.keys(selectedModels).length} selected)
+        {/* CTA Section */}
+        <section className="py-20 px-4 bg-muted/20">
+          <div className="container mx-auto text-center space-y-8">
+            <h2 className="text-3xl md:text-5xl font-bold">
+              Ready to Build Your Next App?
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Join thousands of builders creating amazing applications with AI
+            </p>
+            {user ? (
+              <Button size="lg" className="text-lg px-8 py-6" asChild>
+                <Link to="/workspace">
+                  <Rocket className="w-5 h-5 mr-2" />
+                  Go to Workspace
+                </Link>
+              </Button>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <Button size="lg" className="text-lg px-8 py-6" asChild>
+                  <Link to="/auth">
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Get Started Free
+                  </Link>
+                </Button>
+                <Button size="lg" variant="outline" className="text-lg px-8 py-6" asChild>
+                  <Link to="/pricing">
+                    View Plans
+                  </Link>
                 </Button>
               </div>
             )}
-
-            {/* Infrastructure Wizard */}
-            {showInfrastructureWizard && (
-              <div className="mb-8">
-                <InfrastructureWizard 
-                  appType={activeCategory === "all" ? "default" : activeCategory}
-                  onSelectionChange={setInfrastructureConfig}
-                  onComplete={(config) => {
-                    setInfrastructureConfig(config);
-                    setShowInfrastructureWizard(false);
-                  }}
-                />
-                <div className="mt-4 text-center">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowInfrastructureWizard(false)}
-                  >
-                    Hide Infrastructure Setup
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Templates Grid & Chat Interface */}
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* Templates */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-2xl font-bold">Choose a Template</h2>
-                  <div className="h-px bg-gradient-to-r from-border to-transparent flex-1" />
-                </div>
-                
-                <div className="grid gap-4 max-h-[600px] overflow-y-auto pr-2">
-                  {filteredTemplates.map((template) => (
-                    <TemplateCard
-                      key={template.id}
-                      template={template}
-                      onSelect={handleTemplateSelect}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Chat Interface */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-2xl font-bold">Or Describe Your App</h2>
-                  <div className="h-px bg-gradient-to-r from-border to-transparent flex-1" />
-                </div>
-                
-                <ChatInterface 
-                  onGenerate={handleChatGenerate}
-                  isGenerating={isGenerating}
-                />
-              </div>
-            </div>
-
-            {/* App Preview */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold">Live Preview</h2>
-                <div className="h-px bg-gradient-to-r from-border to-transparent flex-1" />
-              </div>
-              
-              <GeneratedAppPreview 
-                isGenerating={isGenerating}
-                generatedApp={generatedApp}
-                onSave={async () => {
-                  if (!generatedApp || !user) {
-                    toast({
-                      title: "Please sign in",
-                      description: "You need to be signed in to save projects",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-
-                  try {
-                    await saveProject({
-                      title: generatedApp.title,
-                      description: generatedApp.description,
-                      category: activeCategory === 'all' ? 'custom' : activeCategory,
-                      template_id: undefined,
-                      code: generatedApp.code || { components: {}, hooks: {}, utils: {}, types: '', config: '' },
-                      preview_data: {
-                        backend: generatedApp.backend,
-                        deployment: generatedApp.deployment,
-                        infrastructure: infrastructureConfig
-                      },
-                      is_published: false,
-                      created_at: new Date().toISOString(),
-                      updated_at: new Date().toISOString(),
-                      user_id: user.id
-                    });
-
-                    toast({
-                      title: "Project saved!",
-                      description: "Your app has been saved to your workspace",
-                    });
-                  } catch (error) {
-                    console.error('Save error:', error);
-                    toast({
-                      title: "Failed to save",
-                      description: "There was an error saving your project",
-                      variant: "destructive",
-                    });
-                  }
-                }}
-              />
-            </div>
           </div>
-        </main>
+        </section>
 
         {/* Footer */}
         <footer className="border-t border-border/50 bg-muted/20 py-12">
