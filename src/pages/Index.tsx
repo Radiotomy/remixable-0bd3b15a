@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useProjectManager } from "@/hooks/useProjectManager";
 import { Button } from "@/components/ui/button";
 import { CategoryTabs } from "@/components/CategoryTabs";
 import { TemplateCard } from "@/components/TemplateCard";
@@ -26,6 +27,7 @@ const Index = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const { toast } = useToast();
+  const { saveProject } = useProjectManager();
   const [generatedApp, setGeneratedApp] = useState<{
     title: string;
     description: string;
@@ -431,6 +433,47 @@ const Index = () => {
               <GeneratedAppPreview 
                 isGenerating={isGenerating}
                 generatedApp={generatedApp}
+                onSave={async () => {
+                  if (!generatedApp || !user) {
+                    toast({
+                      title: "Please sign in",
+                      description: "You need to be signed in to save projects",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  try {
+                    await saveProject({
+                      title: generatedApp.title,
+                      description: generatedApp.description,
+                      category: activeCategory === 'all' ? 'custom' : activeCategory,
+                      template_id: undefined,
+                      code: generatedApp.code || { components: {}, hooks: {}, utils: {}, types: '', config: '' },
+                      preview_data: {
+                        backend: generatedApp.backend,
+                        deployment: generatedApp.deployment,
+                        infrastructure: infrastructureConfig
+                      },
+                      is_published: false,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString(),
+                      user_id: user.id
+                    });
+
+                    toast({
+                      title: "Project saved!",
+                      description: "Your app has been saved to your workspace",
+                    });
+                  } catch (error) {
+                    console.error('Save error:', error);
+                    toast({
+                      title: "Failed to save",
+                      description: "There was an error saving your project",
+                      variant: "destructive",
+                    });
+                  }
+                }}
               />
             </div>
           </div>

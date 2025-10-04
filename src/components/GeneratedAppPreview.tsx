@@ -13,9 +13,11 @@ import {
   Server,
   FileText,
   Copy,
-  Check
+  Check,
+  Save
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Link } from 'react-router-dom';
 
 interface GeneratedAppData {
   title: string;
@@ -42,11 +44,13 @@ interface GeneratedAppData {
 interface GeneratedAppPreviewProps {
   isGenerating?: boolean;
   generatedApp?: GeneratedAppData;
+  onSave?: () => void | Promise<void>;
 }
 
-export const GeneratedAppPreview = ({ isGenerating = false, generatedApp }: GeneratedAppPreviewProps) => {
+export const GeneratedAppPreview = ({ isGenerating = false, generatedApp, onSave }: GeneratedAppPreviewProps) => {
   const [copiedFile, setCopiedFile] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('preview');
+  const [isSaving, setIsSaving] = useState(false);
 
   const copyToClipboard = async (content: string, fileName: string) => {
     try {
@@ -109,6 +113,21 @@ export const GeneratedAppPreview = ({ isGenerating = false, generatedApp }: Gene
             <p className="text-sm text-muted-foreground mt-1">{generatedApp.description}</p>
           </div>
           <div className="flex gap-2">
+            {onSave && (
+              <Button 
+                size="sm" 
+                variant="default"
+                onClick={async () => {
+                  setIsSaving(true);
+                  await onSave();
+                  setIsSaving(false);
+                }}
+                disabled={isSaving}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {isSaving ? 'Saving...' : 'Save to Workspace'}
+              </Button>
+            )}
             <Button size="sm" variant="outline">
               <Share2 className="w-4 h-4 mr-2" />
               Share
