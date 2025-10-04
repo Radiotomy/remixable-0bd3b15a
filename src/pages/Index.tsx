@@ -8,9 +8,8 @@ import { Sparkles, Zap, Github, Twitter, LogIn, LogOut, User, Code2, Rocket, Lay
 import { Link } from "react-router-dom";
 import { LiveChatWidget } from "@/components/LiveChatWidget";
 import heroBackground from "@/assets/hero-background.jpg";
-// Using new branded assets with cache busting
-const appIcon = `/icons/app-icon.png?v=${Date.now()}`;
-const wordmark = `/icons/wordmark.png?v=${Date.now()}`;
+import rmixLogo from "@/assets/rmixlogo.png";
+import brandSuite from "@/assets/brand-suite.png";
 
 const Index = () => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -62,7 +61,7 @@ const Index = () => {
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img src={appIcon} alt="Remixable" className="w-10 h-10 rounded-xl" />
+                <img src={rmixLogo} alt="Remixable" className="w-10 h-10 rounded-xl" />
                 <div>
                   <h1 className="text-2xl font-bold text-foreground">
                     Remixable
@@ -268,12 +267,15 @@ const Index = () => {
             <div className="grid md:grid-cols-4 gap-8">
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <img src={appIcon} alt="Remixable" className="w-8 h-8 rounded-lg" />
+                  <img src={rmixLogo} alt="Remixable" className="w-8 h-8 rounded-lg" />
                   <span className="font-bold text-lg">Remixable</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   AI-powered no-code builder for the next generation of web applications.
                 </p>
+                <div className="mt-4">
+                  <img src={brandSuite} alt="Remixable Brand Suite" className="w-full max-w-md rounded-lg border border-border/50" />
+                </div>
               </div>
               
               <div className="space-y-3">
