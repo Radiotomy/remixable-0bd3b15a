@@ -2,7 +2,7 @@ export interface Template {
   id: string;
   title: string;
   description: string;
-  category: 'media' | 'sports' | 'video' | 'social' | 'utility' | 'crypto' | 'finance';
+  category: 'media' | 'sports' | 'video' | 'social' | 'utility' | 'crypto' | 'finance' | 'other';
   icon: string;
   prompt: string;
   features: string[];
@@ -18,6 +18,7 @@ export const templateCategories = [
   { id: 'utility', name: 'Utility', icon: '🔧', color: 'from-orange-500 to-amber-500' },
   { id: 'crypto', name: 'Crypto', icon: '₿', color: 'from-yellow-500 to-yellow-400' },
   { id: 'finance', name: 'Finance', icon: '💰', color: 'from-indigo-500 to-blue-500' },
+  { id: 'other', name: 'Other', icon: '✨', color: 'from-slate-500 to-gray-500' },
 ] as const;
 
 export const templates: Template[] = [
