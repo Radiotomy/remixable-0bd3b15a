@@ -7,6 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useFireproofProjects } from '@/hooks/useFireproof';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { CODE_GENERATION_MODELS, AIModel, getModelRecommendation } from '@/data/aiModels';
 import { Info, Sparkles, TrendingUp, DollarSign, Zap, CheckCircle2 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -49,6 +50,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
   const [showRecommendation, setShowRecommendation] = useState(true);
   const [expandedModel, setExpandedModel] = useState<string | null>(null);
   const { saveProject } = useFireproofProjects();
+  const { isAdmin } = useAdminAuth();
 
   const recommendation = getModelRecommendation(projectType, complexity);
 
@@ -129,14 +131,18 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
             </div>
             <p className="text-sm text-muted-foreground">{model.description}</p>
             <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <DollarSign className="w-3 h-3" />
-                {formatPrice(model.pricing)}
-              </span>
-              <span className="flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" />
-                {model.contextLength.toLocaleString()} tokens
-              </span>
+              {isAdmin && (
+                <>
+                  <span className="flex items-center gap-1">
+                    <DollarSign className="w-3 h-3" />
+                    {formatPrice(model.pricing)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" />
+                    {model.contextLength.toLocaleString()} tokens
+                  </span>
+                </>
+              )}
               <span className="flex items-center gap-1">
                 <Info className="w-3 h-3" />
                 {model.provider}
