@@ -204,7 +204,7 @@ export const GeneratedAppPreview = ({ isGenerating = false, generatedApp, onSave
                     <h4 className="font-medium">Components</h4>
                   </div>
                   <div className="space-y-2">
-                    {Object.entries(generatedApp.code.components).map(([name, code]) => (
+                    {generatedApp.code?.components && Object.entries(generatedApp.code.components).map(([name, code]) => (
                       <Card key={name} className="p-3">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-mono">{name}</span>
@@ -226,7 +226,7 @@ export const GeneratedAppPreview = ({ isGenerating = false, generatedApp, onSave
                 </div>
 
                 {/* Hooks */}
-                {Object.keys(generatedApp.code.hooks).length > 0 && (
+                {generatedApp.code?.hooks && Object.keys(generatedApp.code.hooks).length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <FileText className="w-4 h-4" />
@@ -262,7 +262,7 @@ export const GeneratedAppPreview = ({ isGenerating = false, generatedApp, onSave
             <ScrollArea className="h-[400px]">
               <div className="space-y-4">
                 {/* Database Schema */}
-                {generatedApp.backend.schema && (
+                {generatedApp.backend?.schema && (
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <Database className="w-4 h-4" />
@@ -287,7 +287,7 @@ export const GeneratedAppPreview = ({ isGenerating = false, generatedApp, onSave
                 )}
 
                 {/* Edge Functions */}
-                {Object.keys(generatedApp.backend.edgeFunctions).length > 0 && (
+                {generatedApp.backend?.edgeFunctions && Object.keys(generatedApp.backend.edgeFunctions).length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <Server className="w-4 h-4" />
@@ -323,26 +323,30 @@ export const GeneratedAppPreview = ({ isGenerating = false, generatedApp, onSave
             <ScrollArea className="h-[400px]">
               <div className="space-y-4">
                 {/* Environment Variables */}
-                <div>
-                  <h4 className="font-medium mb-2">Environment Variables</h4>
-                  <Card className="p-3">
-                    <pre className="text-xs font-mono">
-                      {Object.entries(generatedApp.deployment.envVars)
+                {generatedApp.deployment?.envVars && (
+                  <div>
+                    <h4 className="font-medium mb-2">Environment Variables</h4>
+                    <Card className="p-3">
+                      <pre className="text-xs font-mono">
+                        {Object.entries(generatedApp.deployment.envVars)
                         .map(([key, value]) => `${key}=${value}`)
-                        .join('\n')}
-                    </pre>
-                  </Card>
-                </div>
+                          .join('\n')}
+                      </pre>
+                    </Card>
+                  </div>
+                )}
 
                 {/* Build Commands */}
-                <div>
-                  <h4 className="font-medium mb-2">Build Commands</h4>
-                  <Card className="p-3">
-                    <pre className="text-xs font-mono">
-                      {generatedApp.deployment.buildCommands.join('\n')}
-                    </pre>
-                  </Card>
-                </div>
+                {generatedApp.deployment?.buildCommands && (
+                  <div>
+                    <h4 className="font-medium mb-2">Build Commands</h4>
+                    <Card className="p-3">
+                      <pre className="text-xs font-mono">
+                        {generatedApp.deployment.buildCommands.join('\n')}
+                      </pre>
+                    </Card>
+                  </div>
+                )}
 
                 {/* Deploy Button */}
                 <Button className="w-full" size="lg">
