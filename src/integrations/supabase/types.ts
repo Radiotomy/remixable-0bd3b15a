@@ -14,6 +14,142 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_tokens: {
+        Row: {
+          app_name: string
+          chain_id: number
+          created_at: string
+          id: string
+          token_address: string
+          token_name: string
+          token_symbol: string
+          total_supply: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_name: string
+          chain_id?: number
+          created_at?: string
+          id?: string
+          token_address: string
+          token_name: string
+          token_symbol: string
+          total_supply: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_name?: string
+          chain_id?: number
+          created_at?: string
+          id?: string
+          token_address?: string
+          token_name?: string
+          token_symbol?: string
+          total_supply?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contract_deployments: {
+        Row: {
+          app_token_id: string | null
+          block_number: number | null
+          chain_id: number
+          contract_address: string
+          contract_type: string
+          created_at: string
+          deployment_cost: number | null
+          error_message: string | null
+          gas_used: number | null
+          id: string
+          network: string
+          status: string
+          transaction_hash: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_token_id?: string | null
+          block_number?: number | null
+          chain_id?: number
+          contract_address: string
+          contract_type: string
+          created_at?: string
+          deployment_cost?: number | null
+          error_message?: string | null
+          gas_used?: number | null
+          id?: string
+          network?: string
+          status?: string
+          transaction_hash: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_token_id?: string | null
+          block_number?: number | null
+          chain_id?: number
+          contract_address?: string
+          contract_type?: string
+          created_at?: string
+          deployment_cost?: number | null
+          error_message?: string | null
+          gas_used?: number | null
+          id?: string
+          network?: string
+          status?: string
+          transaction_hash?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_deployments_app_token_id_fkey"
+            columns: ["app_token_id"]
+            isOneToOne: false
+            referencedRelation: "app_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mini_app_configs: {
+        Row: {
+          app_token_id: string | null
+          config: Json
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_token_id?: string | null
+          config: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_token_id?: string | null
+          config?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mini_app_configs_app_token_id_fkey"
+            columns: ["app_token_id"]
+            isOneToOne: false
+            referencedRelation: "app_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_transactions: {
         Row: {
           amount: number
