@@ -1,0 +1,14 @@
+# Foundry
+cache/
+out/
+lib/
+broadcast/
+
+# Node
+node_modules/
+
+# Environment
+.env
+
+# Artifacts
+artifacts.json
