@@ -9,6 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useContractDeployment } from '@/hooks/useContractDeployment';
 import { 
   Coins, 
   TrendingUp, 
@@ -47,6 +48,7 @@ interface TokenCreationWizardProps {
 
 export const TokenCreationWizard = ({ isOpen, onClose, onCreateToken, appName }: TokenCreationWizardProps) => {
   const [step, setStep] = useState(1);
+  const { deployContracts, isDeploying } = useContractDeployment();
   const [config, setConfig] = useState<TokenConfig>({
     name: `${appName} Token`,
     symbol: appName.substring(0, 4).toUpperCase(),
@@ -103,9 +105,12 @@ export const TokenCreationWizard = ({ isOpen, onClose, onCreateToken, appName }:
   const nextStep = () => setStep(prev => Math.min(prev + 1, 4));
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
-  const handleCreateToken = () => {
-    onCreateToken(config);
-    onClose();
+  const handleCreateToken = async () => {
+    const result = await deployContracts(config);
+    if (result) {
+      onCreateToken(config);
+      onClose();
+    }
   };
 
   if (!isOpen) return null;
@@ -427,9 +432,13 @@ export const TokenCreationWizard = ({ isOpen, onClose, onCreateToken, appName }:
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               ) : (
-                <Button onClick={handleCreateToken} className="flex items-center gap-2 bg-accent hover:bg-accent/90">
+                <Button 
+                  onClick={handleCreateToken} 
+                  disabled={isDeploying}
+                  className="flex items-center gap-2 bg-accent hover:bg-accent/90"
+                >
                   <Coins className="w-4 h-4" />
-                  Create Token
+                  {isDeploying ? 'Deploying to BASE...' : 'Create Token'}
                 </Button>
               )}
             </div>
