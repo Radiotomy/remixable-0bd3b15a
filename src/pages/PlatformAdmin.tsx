@@ -36,6 +36,13 @@ export default function PlatformAdmin() {
   })
   const { toast } = useToast()
 
+  // All hooks must be called before any conditional returns
+  useEffect(() => {
+    if (isAdmin && !isLoading) {
+      fetchPlatformStats()
+    }
+  }, [isAdmin, isLoading])
+
   // Show loading state while checking auth
   if (isLoading) {
     return (
@@ -52,10 +59,6 @@ export default function PlatformAdmin() {
   if (!isAdmin) {
     return null
   }
-
-  useEffect(() => {
-    fetchPlatformStats()
-  }, [])
 
   const fetchPlatformStats = async () => {
     try {
