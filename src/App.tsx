@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { WagmiProvider } from 'wagmi'
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { config } from '@/lib/web3.config'
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -22,6 +23,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <SpeedInsights />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
