@@ -35,16 +35,19 @@ export const CONTRACT_ADDRESSES: Record<number, {
   rmxToken: `0x${string}`;
   tokenFactory: `0x${string}`;
   revenueDistribution: `0x${string}`;
+  rmxStaking: `0x${string}`;
 }> = {
   [base.id]: {
-    rmxToken: '0x0000000000000000000000000000000000000000', // Will be updated after deployment
+    rmxToken: '0x0000000000000000000000000000000000000000', // TODO: Update after deployment
     tokenFactory: '0x0000000000000000000000000000000000000000',
     revenueDistribution: '0x0000000000000000000000000000000000000000',
+    rmxStaking: '0x0000000000000000000000000000000000000000',
   },
   [baseGoerli.id]: {
     rmxToken: '0x0000000000000000000000000000000000000000',
     tokenFactory: '0x0000000000000000000000000000000000000000', 
     revenueDistribution: '0x0000000000000000000000000000000000000000',
+    rmxStaking: '0x0000000000000000000000000000000000000000',
   }
 } as const
 
