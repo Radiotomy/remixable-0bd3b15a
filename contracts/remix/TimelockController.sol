@@ -5,12 +5,24 @@ pragma solidity ^0.8.24;
 // REMIXABLE TIMELOCK CONTROLLER - TimelockController.sol
 // ============================================================================
 // Deploy FIFTH (after RMXStaking)
-// Constructor: minDelay, proposers[], executors[], admin
 // Network: BASE Mainnet (Chain ID: 8453)
 // ============================================================================
-
-// Re-export OpenZeppelin's TimelockController for deployment via Remix
-// This file exists for documentation and deployment guide purposes
+//
+// REMIX DEPLOYMENT PARAMETERS:
+// ============================
+// minDelay:   172800
+// proposers:  []
+// executors:  ["0x0000000000000000000000000000000000000000"]
+// admin:      [YOUR_DEPLOYER_WALLET_ADDRESS]
+//
+// EXAMPLE (copy/paste ready):
+// ---------------------------
+// minDelay:   172800
+// proposers:  []
+// executors:  ["0x0000000000000000000000000000000000000000"]
+// admin:      0xYourWalletAddressHere
+//
+// ============================================================================
 
 import "@openzeppelin/contracts/governance/TimelockController.sol";
 
@@ -18,30 +30,55 @@ import "@openzeppelin/contracts/governance/TimelockController.sol";
  * @title RMXTimelock
  * @dev Timelock controller for governance execution delay
  * 
- * Deployment Parameters:
- * - minDelay: 172800 (48 hours in seconds)
- * - proposers: [RMXGovernor address] (set after Governor deployment)
- * - executors: [address(0)] (anyone can execute after delay)
- * - admin: deployer address (renounce after setup)
+ * DEPLOYMENT CONFIGURATION:
+ * -------------------------
+ * minDelay: 172800 seconds (48 hours)
+ *   - All governance actions must wait 48 hours before execution
+ *   - Gives community time to react to malicious proposals
  * 
- * Security:
- * - All governance actions must wait 48 hours before execution
- * - Gives community time to react to malicious proposals
- * - Can cancel pending operations if needed
+ * proposers: [] (empty array)
+ *   - Initially empty - will add RMXGovernor address after its deployment
+ *   - Use grantRole(PROPOSER_ROLE, governorAddress) after deploying Governor
  * 
- * Post-Deployment:
- * 1. Deploy Governor with this Timelock address
- * 2. Grant PROPOSER_ROLE to Governor
- * 3. Grant EXECUTOR_ROLE to address(0) or specific addresses
- * 4. Renounce TIMELOCK_ADMIN_ROLE from deployer
+ * executors: ["0x0000000000000000000000000000000000000000"]
+ *   - address(0) means ANYONE can execute after delay expires
+ *   - This is the recommended setting for decentralized governance
+ * 
+ * admin: Your deployer wallet address
+ *   - Temporary admin for initial setup
+ *   - MUST renounce this role after configuration is complete
+ * 
+ * POST-DEPLOYMENT STEPS:
+ * ----------------------
+ * 1. Record this Timelock contract address
+ * 2. Deploy RMXGovernor with this Timelock address
+ * 3. Call: grantRole(PROPOSER_ROLE, RMXGovernorAddress)
+ * 4. Call: grantRole(CANCELLER_ROLE, RMXGovernorAddress)
+ * 5. Call: renounceRole(TIMELOCK_ADMIN_ROLE, yourAddress)
  */
 contract RMXTimelock is TimelockController {
+    
+    // ========================================================================
+    // CONSTANTS - Reference values for deployment
+    // ========================================================================
+    
+    /// @notice Recommended minimum delay: 48 hours in seconds
+    uint256 public constant RECOMMENDED_MIN_DELAY = 172800;
+    
+    /// @notice Zero address for open executor role
+    address public constant OPEN_EXECUTOR = address(0);
+    
+    // ========================================================================
+    // CONSTRUCTOR
+    // ========================================================================
+    
     /**
-     * @dev Constructor
-     * @param minDelay Minimum delay for operations (48 hours = 172800 seconds)
-     * @param proposers Array of addresses that can propose (initially empty, add Governor later)
-     * @param executors Array of addresses that can execute (address(0) = anyone)
-     * @param admin Admin address for initial setup (should renounce later)
+     * @dev Constructor - Deploy with these exact values in Remix:
+     * 
+     * @param minDelay      Enter: 172800
+     * @param proposers     Enter: []
+     * @param executors     Enter: ["0x0000000000000000000000000000000000000000"]
+     * @param admin         Enter: Your wallet address (e.g., 0x742d35Cc6...)
      */
     constructor(
         uint256 minDelay,
@@ -49,6 +86,10 @@ contract RMXTimelock is TimelockController {
         address[] memory executors,
         address admin
     ) TimelockController(minDelay, proposers, executors, admin) {}
+    
+    // ========================================================================
+    // VIEW FUNCTIONS
+    // ========================================================================
     
     /**
      * @dev Get the minimum delay for operations
@@ -89,5 +130,38 @@ contract RMXTimelock is TimelockController {
      */
     function getOperationTimestamp(bytes32 id) external view returns (uint256) {
         return getTimestamp(id);
+    }
+    
+    // ========================================================================
+    // ROLE CONSTANTS (for reference in Remix)
+    // ========================================================================
+    
+    /**
+     * @dev Returns the PROPOSER_ROLE hash for granting to Governor
+     * Use this when calling grantRole after Governor deployment
+     */
+    function getProposerRole() external pure returns (bytes32) {
+        return PROPOSER_ROLE;
+    }
+    
+    /**
+     * @dev Returns the EXECUTOR_ROLE hash
+     */
+    function getExecutorRole() external pure returns (bytes32) {
+        return EXECUTOR_ROLE;
+    }
+    
+    /**
+     * @dev Returns the CANCELLER_ROLE hash for granting to Governor
+     */
+    function getCancellerRole() external pure returns (bytes32) {
+        return CANCELLER_ROLE;
+    }
+    
+    /**
+     * @dev Returns the TIMELOCK_ADMIN_ROLE hash for renouncing
+     */
+    function getAdminRole() external pure returns (bytes32) {
+        return DEFAULT_ADMIN_ROLE;
     }
 }
