@@ -1,682 +1,530 @@
-# Remixable Smart Contract Deployment Guide
+# Remixable Smart Contracts - Complete Deployment Guide
 
-## Complete step-by-step guide for deploying contracts via Remix IDE
+## 9 Contract Suite - Step-by-Step Remix IDE Deployment
+
+---
+
+## Contract Deployment Checklist
+
+| # | Contract | Deploy | Constructor Needs | Records After Deploy |
+|---|----------|--------|-------------------|---------------------|
+| 1 | RMXToken | ✅ Manual | None | `RMX_TOKEN` address |
+| 2 | TokenVesting | ✅ Manual | `RMX_TOKEN` | `TOKEN_VESTING` address |
+| 3 | RevenueDistribution | ✅ Manual | `RMX_TOKEN` | `REVENUE_DIST` address |
+| 4 | RMXStaking | ✅ Manual | `RMX_TOKEN` | `RMX_STAKING` address |
+| 5 | TimelockController | ✅ Manual | minDelay, proposers[], executors[], admin | `TIMELOCK` address |
+| 6 | RMXGovernor | ✅ Manual | `RMX_TOKEN`, `TIMELOCK` | `GOVERNOR` address |
+| 7 | TokenFactory | ✅ Manual | None | `TOKEN_FACTORY` address |
+| 8 | AppToken | 🔄 Auto | (Created by TokenFactory) | N/A |
+| 9 | AppTokenStaking | 🔄 Auto | (Created by TokenFactory) | N/A |
 
 ---
 
 ## Prerequisites
 
-Before starting, ensure you have:
-- [ ] MetaMask wallet installed in your browser
-- [ ] Wallet connected to **BASE Mainnet**
-- [ ] At least **0.02 ETH** on BASE for gas fees (5 contracts)
-- [ ] This guide open alongside Remix IDE
+- [ ] MetaMask installed with BASE Mainnet configured
+- [ ] At least **0.05 ETH** on BASE for gas (7 deployments + configurations)
+- [ ] Development wallet address ready
+- [ ] Operations wallet address ready
 
 ### Add BASE Mainnet to MetaMask
-
-If BASE isn't in your MetaMask:
-1. Go to [chainlist.org](https://chainlist.org)
-2. Search for "Base"
-3. Click "Add to MetaMask" for Base Mainnet (Chain ID: 8453)
-
-Or manually add:
 - **Network Name**: Base
 - **RPC URL**: `https://mainnet.base.org`
 - **Chain ID**: `8453`
-- **Symbol**: `ETH`
-- **Block Explorer**: `https://basescan.org`
-
----
-
-## Contract Overview
-
-| Contract | Purpose | Constructor Params |
-|----------|---------|-------------------|
-| `RMXToken.sol` | Platform governance token (1B supply) | None |
-| `RevenueDistribution.sol` | Distributes platform fees | RMXToken address |
-| `RMXStaking.sol` | Stake RMX to earn 85% of fees | RMXToken address |
-| `AppToken.sol` | Template for user app tokens | (Created by factory) |
-| `TokenFactory.sol` | Factory to create AppTokens | None |
+- **Symbol**: ETH
+- **Explorer**: `https://basescan.org`
 
 ---
 
 ## Phase 1: Setup Remix IDE
 
-### Step 1.1: Open Remix IDE
-
-1. Navigate to **[remix.ethereum.org](https://remix.ethereum.org)**
-2. You'll see the Remix IDE interface with:
-   - **Left sidebar**: File Explorer, Search, Compiler, Deploy icons
-   - **Main panel**: Code editor
-   - **Bottom panel**: Terminal/console
-
-### Step 1.2: Create Contract Files
-
-In the File Explorer (left sidebar):
-
-1. **Right-click** on the `contracts` folder
-2. Select **"New File"**
-3. Create these 5 files (one at a time):
-
-| File Name | Purpose |
-|-----------|---------|
-| `RMXToken.sol` | Platform governance token |
-| `RevenueDistribution.sol` | Revenue sharing contract |
-| `RMXStaking.sol` | Staking for rewards |
-| `AppToken.sol` | Template for user app tokens |
-| `TokenFactory.sol` | Factory to create AppTokens |
-
----
-
-## Phase 2: Add Contract Code
-
-### Step 2.1: RMXToken.sol
-
-Click on `RMXToken.sol` and paste this entire code:
-
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
-
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-
-contract RMXToken is ERC20, Ownable {
-    uint256 public constant TOTAL_SUPPLY = 1_000_000_000 * 10**18; // 1B tokens
-    
-    constructor() ERC20("Remixable", "RMX") Ownable(msg.sender) {
-        _mint(msg.sender, TOTAL_SUPPLY);
-    }
-    
-    function burn(uint256 amount) external {
-        _burn(msg.sender, amount);
-    }
-}
-```
-
-### Step 2.2: RevenueDistribution.sol
-
-Click on `RevenueDistribution.sol` and paste:
-
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
-
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-contract RevenueDistribution is Ownable {
-    IERC20 public rmxToken;
-    
-    uint256 public constant STAKING_REWARDS = 8500; // 85%
-    uint256 public constant PLATFORM_DEVELOPMENT = 1000; // 10%
-    uint256 public constant PLATFORM_OPERATIONS = 500; // 5%
-    
-    address public stakingContract;
-    address public developmentWallet;
-    address public operationsWallet;
-    
-    event RevenueDistributed(uint256 total, uint256 staking, uint256 development, uint256 operations);
-    event AddressesUpdated(address staking, address development, address operations);
-    
-    constructor(address _rmxToken) Ownable(msg.sender) {
-        rmxToken = IERC20(_rmxToken);
-    }
-    
-    function setAddresses(
-        address _stakingContract,
-        address _developmentWallet,
-        address _operationsWallet
-    ) external onlyOwner {
-        stakingContract = _stakingContract;
-        developmentWallet = _developmentWallet;
-        operationsWallet = _operationsWallet;
-        emit AddressesUpdated(_stakingContract, _developmentWallet, _operationsWallet);
-    }
-    
-    receive() external payable {
-        distributeRevenue();
-    }
-    
-    function distributeRevenue() public {
-        uint256 balance = address(this).balance;
-        require(balance > 0, "No revenue to distribute");
-        
-        uint256 stakingAmount = (balance * STAKING_REWARDS) / 10000;
-        uint256 developmentAmount = (balance * PLATFORM_DEVELOPMENT) / 10000;
-        uint256 operationsAmount = (balance * PLATFORM_OPERATIONS) / 10000;
-        
-        if (stakingContract != address(0)) {
-            (bool success,) = stakingContract.call{value: stakingAmount}("");
-            require(success, "Staking transfer failed");
-        }
-        
-        if (developmentWallet != address(0)) {
-            (bool success,) = developmentWallet.call{value: developmentAmount}("");
-            require(success, "Development transfer failed");
-        }
-        
-        if (operationsWallet != address(0)) {
-            (bool success,) = operationsWallet.call{value: operationsAmount}("");
-            require(success, "Operations transfer failed");
-        }
-        
-        emit RevenueDistributed(balance, stakingAmount, developmentAmount, operationsAmount);
-    }
-    
-    function getBalance() external view returns (uint256) {
-        return address(this).balance;
-    }
-}
-```
-
-### Step 2.3: RMXStaking.sol
-
-Click on `RMXStaking.sol` and paste:
-
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
-
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-
-contract RMXStaking is Ownable, ReentrancyGuard {
-    using SafeERC20 for IERC20;
-
-    IERC20 public immutable rmxToken;
-    
-    uint256 public totalStaked;
-    mapping(address => uint256) public stakedBalance;
-    
-    uint256 public rewardPerTokenStored;
-    mapping(address => uint256) public userRewardPerTokenPaid;
-    mapping(address => uint256) public pendingRewards;
-    
-    address[] public stakers;
-    mapping(address => bool) public isStaker;
-    
-    event Staked(address indexed user, uint256 amount);
-    event Unstaked(address indexed user, uint256 amount);
-    event RewardsClaimed(address indexed user, uint256 amount);
-    event RewardsDistributed(uint256 amount, uint256 newRewardPerToken);
-    
-    constructor(address _rmxToken) Ownable(msg.sender) {
-        require(_rmxToken != address(0), "Invalid token address");
-        rmxToken = IERC20(_rmxToken);
-    }
-    
-    receive() external payable {
-        if (msg.value > 0 && totalStaked > 0) {
-            uint256 rewardPerToken = (msg.value * 1e18) / totalStaked;
-            rewardPerTokenStored += rewardPerToken;
-            emit RewardsDistributed(msg.value, rewardPerTokenStored);
-        }
-    }
-    
-    modifier updateReward(address account) {
-        if (account != address(0) && stakedBalance[account] > 0) {
-            pendingRewards[account] = earned(account);
-            userRewardPerTokenPaid[account] = rewardPerTokenStored;
-        }
-        _;
-    }
-    
-    function earned(address account) public view returns (uint256) {
-        uint256 balance = stakedBalance[account];
-        if (balance == 0) return pendingRewards[account];
-        uint256 rewardDelta = rewardPerTokenStored - userRewardPerTokenPaid[account];
-        return pendingRewards[account] + (balance * rewardDelta) / 1e18;
-    }
-    
-    function stake(uint256 amount) external nonReentrant updateReward(msg.sender) {
-        require(amount > 0, "Cannot stake 0");
-        
-        if (!isStaker[msg.sender]) {
-            stakers.push(msg.sender);
-            isStaker[msg.sender] = true;
-        }
-        
-        stakedBalance[msg.sender] += amount;
-        totalStaked += amount;
-        
-        rmxToken.safeTransferFrom(msg.sender, address(this), amount);
-        emit Staked(msg.sender, amount);
-    }
-    
-    function unstake(uint256 amount) external nonReentrant updateReward(msg.sender) {
-        require(amount > 0, "Cannot unstake 0");
-        require(stakedBalance[msg.sender] >= amount, "Insufficient staked balance");
-        
-        stakedBalance[msg.sender] -= amount;
-        totalStaked -= amount;
-        
-        rmxToken.safeTransfer(msg.sender, amount);
-        emit Unstaked(msg.sender, amount);
-    }
-    
-    function claimRewards() external nonReentrant updateReward(msg.sender) {
-        uint256 reward = pendingRewards[msg.sender];
-        require(reward > 0, "No rewards to claim");
-        
-        pendingRewards[msg.sender] = 0;
-        
-        (bool success, ) = msg.sender.call{value: reward}("");
-        require(success, "Reward transfer failed");
-        emit RewardsClaimed(msg.sender, reward);
-    }
-    
-    function exit() external nonReentrant updateReward(msg.sender) {
-        uint256 stakedAmount = stakedBalance[msg.sender];
-        uint256 reward = pendingRewards[msg.sender];
-        
-        if (stakedAmount > 0) {
-            stakedBalance[msg.sender] = 0;
-            totalStaked -= stakedAmount;
-            rmxToken.safeTransfer(msg.sender, stakedAmount);
-            emit Unstaked(msg.sender, stakedAmount);
-        }
-        
-        if (reward > 0) {
-            pendingRewards[msg.sender] = 0;
-            (bool success, ) = msg.sender.call{value: reward}("");
-            require(success, "Reward transfer failed");
-            emit RewardsClaimed(msg.sender, reward);
-        }
-    }
-    
-    function getStakerCount() external view returns (uint256) {
-        return stakers.length;
-    }
-    
-    function getContractBalance() external view returns (uint256) {
-        return address(this).balance;
-    }
-}
-```
-
-### Step 2.4: AppToken.sol
-
-Click on `AppToken.sol` and paste:
-
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
-
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-
-contract AppToken is ERC20, Ownable {
-    address public revenueContract;
-    uint256 public constant PLATFORM_FEE = 500; // 5%
-    
-    event RevenueDistributed(uint256 amount, uint256 platformFee);
-    
-    constructor(
-        string memory name,
-        string memory symbol,
-        uint256 totalSupply,
-        address creator,
-        address _revenueContract
-    ) ERC20(name, symbol) Ownable(creator) {
-        revenueContract = _revenueContract;
-        _mint(creator, totalSupply * 10**18);
-    }
-    
-    function distributeRevenue() external payable {
-        require(msg.value > 0, "No ETH sent");
-        
-        uint256 platformFee = (msg.value * PLATFORM_FEE) / 10000;
-        uint256 ownerAmount = msg.value - platformFee;
-        
-        if (revenueContract != address(0)) {
-            (bool success,) = revenueContract.call{value: platformFee}("");
-            require(success, "Platform fee transfer failed");
-        }
-        
-        (bool success,) = owner().call{value: ownerAmount}("");
-        require(success, "Owner transfer failed");
-        
-        emit RevenueDistributed(msg.value, platformFee);
-    }
-    
-    function setRevenueContract(address _newRevenueContract) external onlyOwner {
-        revenueContract = _newRevenueContract;
-    }
-    
-    function burn(uint256 amount) external {
-        _burn(msg.sender, amount);
-    }
-}
-```
-
-### Step 2.5: TokenFactory.sol
-
-Click on `TokenFactory.sol` and paste:
-
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
-
-import "./AppToken.sol";
-
-contract TokenFactory {
-    event TokenCreated(address indexed token, address indexed creator, string name, string symbol);
-    
-    mapping(address => address[]) public userTokens;
-    address[] public allTokens;
-    address public defaultRevenueContract;
-    address public owner;
-    
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Not owner");
-        _;
-    }
-    
-    constructor() {
-        owner = msg.sender;
-    }
-    
-    function setDefaultRevenueContract(address _revenueContract) external onlyOwner {
-        defaultRevenueContract = _revenueContract;
-    }
-    
-    function createToken(
-        string memory name,
-        string memory symbol,
-        uint256 totalSupply,
-        address revenueContract
-    ) external returns (address) {
-        address revContract = revenueContract != address(0) ? revenueContract : defaultRevenueContract;
-        
-        bytes32 salt = keccak256(abi.encodePacked(msg.sender, name, symbol, block.timestamp));
-        
-        AppToken token = new AppToken{salt: salt}(
-            name,
-            symbol,
-            totalSupply,
-            msg.sender,
-            revContract
-        );
-        
-        address tokenAddress = address(token);
-        userTokens[msg.sender].push(tokenAddress);
-        allTokens.push(tokenAddress);
-        
-        emit TokenCreated(tokenAddress, msg.sender, name, symbol);
-        return tokenAddress;
-    }
-    
-    function getUserTokens(address user) external view returns (address[] memory) {
-        return userTokens[user];
-    }
-    
-    function getTotalTokens() external view returns (uint256) {
-        return allTokens.length;
-    }
-    
-    function getUserTokenCount(address user) external view returns (uint256) {
-        return userTokens[user].length;
-    }
-}
-```
-
-> ✅ **Checkpoint**: You should now have 5 files with code and no red error underlines
-
----
-
-## Phase 3: Configure Compiler
-
-### Step 3.1: Open Compiler Panel
-
-1. Click the **Solidity Compiler** icon in the left sidebar (looks like an "S" with arrows)
-2. You'll see compiler settings panel
-
-### Step 3.2: Set Compiler Version
-
-1. Click the **compiler version dropdown**
-2. Select: `0.8.19+commit.7dd6d404`
-3. If exact version isn't available, select any `0.8.19` version
-
-### Step 3.3: Enable Optimization
-
-1. Click **"Advanced Configurations"** to expand
-2. Check ✅ **"Enable optimization"**
-3. Set optimization runs to: `200`
-
-### Step 3.4: Compile All Contracts
-
-1. In File Explorer, click on `TokenFactory.sol` (this imports others)
-2. Click the blue **"Compile TokenFactory.sol"** button
-3. Wait for compilation (may take 10-30 seconds)
-4. **Also compile** `RMXStaking.sol` separately (it's standalone)
-
-**Success indicators:**
-- ✅ Green checkmark appears on compiler icon
-- ✅ No red errors in the terminal
-- ✅ "Compilation successful" message
-
----
-
-## Phase 4: Deploy Contracts
-
-### Step 4.1: Connect MetaMask
-
-1. In **ENVIRONMENT** dropdown, select: `Injected Provider - MetaMask`
-2. MetaMask popup will appear - click **Connect**
-3. Ensure you're on **BASE Mainnet** (Chain ID 8453)
-
----
-
-## ⚠️ Deploy Order: CRITICAL!
-
-You **MUST** deploy in this exact order:
+1. Go to **[remix.ethereum.org](https://remix.ethereum.org)**
+2. Create these 9 files in the `contracts` folder:
 
 ```
-1. RMXToken (no parameters)
-     ↓
-2. RevenueDistribution (needs RMXToken address)
-     ↓  
-3. RMXStaking (needs RMXToken address)
-     ↓
-4. TokenFactory (no parameters)
+contracts/
+├── RMXToken.sol
+├── TokenVesting.sol
+├── RevenueDistribution.sol
+├── RMXStaking.sol
+├── TimelockController.sol
+├── RMXGovernor.sol
+├── TokenFactory.sol
+├── AppToken.sol
+└── AppTokenStaking.sol
 ```
 
 ---
 
-### Step 4.2: Deploy RMXToken (First)
+## Phase 2: Contract Code
 
-1. In **CONTRACT** dropdown, select: `RMXToken`
-2. Leave constructor parameters empty
-3. Click orange **"Deploy"** button
-4. Confirm in MetaMask
-5. Wait for confirmation
+Copy each contract from the `/contracts/remix/` folder in this repository into the corresponding Remix file.
 
-**📋 SAVE THIS ADDRESS:**
+---
+
+## Phase 3: Compiler Settings
+
+1. Click **Solidity Compiler** (left sidebar)
+2. Version: `0.8.19+commit.7dd6d404`
+3. Enable **Optimization**: 200 runs
+4. Compile each contract
+
+---
+
+## Phase 4: Connect Wallet
+
+1. Go to **Deploy & Run Transactions**
+2. Environment: `Injected Provider - MetaMask`
+3. Confirm MetaMask is on **BASE Mainnet** (8453)
+
+---
+
+# 🚀 DEPLOYMENT STEPS
+
+## ADDRESS TRACKER (Fill as you deploy)
+
 ```
-RMXToken = 0x________________________________
+┌────────────────────────────────────────────────────────────┐
+│ DEPLOYED ADDRESSES - RECORD EACH ONE                       │
+├────────────────────────────────────────────────────────────┤
+│ 1. RMX_TOKEN        = 0x______________________________     │
+│ 2. TOKEN_VESTING    = 0x______________________________     │
+│ 3. REVENUE_DIST     = 0x______________________________     │
+│ 4. RMX_STAKING      = 0x______________________________     │
+│ 5. TIMELOCK         = 0x______________________________     │
+│ 6. GOVERNOR         = 0x______________________________     │
+│ 7. TOKEN_FACTORY    = 0x______________________________     │
+├────────────────────────────────────────────────────────────┤
+│ WALLETS                                                    │
+│ DEV_WALLET          = 0x______________________________     │
+│ OPS_WALLET          = 0x______________________________     │
+│ YOUR_WALLET         = 0x______________________________     │
+└────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### Step 4.3: Deploy RevenueDistribution (Second)
+## STEP 1: Deploy RMXToken
 
-1. In **CONTRACT** dropdown, select: `RevenueDistribution`
-2. In the deploy input field, paste your **RMXToken address**
-3. Click orange **"Deploy"** button
-4. Confirm in MetaMask
+### Contract: `RMXToken.sol`
+### Constructor: None
+### Depends on: Nothing (first contract)
 
-**📋 SAVE THIS ADDRESS:**
+**Actions:**
+1. Select `RMXToken` in Contract dropdown
+2. Leave Deploy parameters empty
+3. Click **Deploy** → Confirm in MetaMask
+
+**📝 RECORD:**
 ```
-RevenueDistribution = 0x________________________________
+RMX_TOKEN = 0x________________________________
+```
+
+**✅ Verify:** 
+- Call `totalSupply()` → Should return `1000000000000000000000000000` (1B with 18 decimals)
+- Call `name()` → Should return "Remixable"
+- Call `symbol()` → Should return "RMX"
+
+---
+
+## STEP 2: Deploy TokenVesting
+
+### Contract: `TokenVesting.sol`
+### Constructor: `_rmxToken`
+### Depends on: RMX_TOKEN (Step 1)
+
+**Actions:**
+1. Select `TokenVesting` in Contract dropdown
+2. In Deploy parameters, enter:
+   ```
+   _rmxToken: [paste RMX_TOKEN address from Step 1]
+   ```
+3. Click **Deploy** → Confirm in MetaMask
+
+**📝 RECORD:**
+```
+TOKEN_VESTING = 0x________________________________
+```
+
+**✅ Verify:**
+- Call `rmxToken()` → Should return your RMX_TOKEN address
+
+---
+
+## STEP 3: Deploy RevenueDistribution
+
+### Contract: `RevenueDistribution.sol`
+### Constructor: `_rmxToken`
+### Depends on: RMX_TOKEN (Step 1)
+
+**Actions:**
+1. Select `RevenueDistribution` in Contract dropdown
+2. In Deploy parameters, enter:
+   ```
+   _rmxToken: [paste RMX_TOKEN address from Step 1]
+   ```
+3. Click **Deploy** → Confirm in MetaMask
+
+**📝 RECORD:**
+```
+REVENUE_DIST = 0x________________________________
+```
+
+**✅ Verify:**
+- Call `STAKING_REWARDS()` → Should return `8500` (85%)
+- Call `PLATFORM_DEVELOPMENT()` → Should return `1000` (10%)
+- Call `PLATFORM_OPERATIONS()` → Should return `500` (5%)
+
+---
+
+## STEP 4: Deploy RMXStaking
+
+### Contract: `RMXStaking.sol`
+### Constructor: `_rmxToken`
+### Depends on: RMX_TOKEN (Step 1)
+
+**Actions:**
+1. Select `RMXStaking` in Contract dropdown
+2. In Deploy parameters, enter:
+   ```
+   _rmxToken: [paste RMX_TOKEN address from Step 1]
+   ```
+3. Click **Deploy** → Confirm in MetaMask
+
+**📝 RECORD:**
+```
+RMX_STAKING = 0x________________________________
+```
+
+**✅ Verify:**
+- Call `rmxToken()` → Should return your RMX_TOKEN address
+- Call `totalStaked()` → Should return `0`
+
+---
+
+## STEP 5: Deploy TimelockController (RMXTimelock)
+
+### Contract: `RMXTimelock.sol`
+### Constructor: `minDelay`, `proposers`, `executors`, `admin`
+### Depends on: Nothing (but will link to Governor later)
+
+**Actions:**
+1. Select `RMXTimelock` in Contract dropdown
+2. In Deploy parameters, enter:
+   ```
+   minDelay: 172800
+   proposers: []
+   executors: ["0x0000000000000000000000000000000000000000"]
+   admin: [YOUR_WALLET address]
+   ```
+   
+   **Parameter explanation:**
+   - `minDelay`: 172800 seconds = 48 hours
+   - `proposers`: Empty array `[]` (Governor will be added after Step 6)
+   - `executors`: `["0x0000000000000000000000000000000000000000"]` means anyone can execute
+   - `admin`: Your wallet for initial setup
+
+3. Click **Deploy** → Confirm in MetaMask
+
+**📝 RECORD:**
+```
+TIMELOCK = 0x________________________________
+```
+
+**✅ Verify:**
+- Call `getMinDelay()` → Should return `172800`
+
+---
+
+## STEP 6: Deploy RMXGovernor
+
+### Contract: `RMXGovernor.sol`
+### Constructor: `_token`, `_timelock`
+### Depends on: RMX_TOKEN (Step 1), TIMELOCK (Step 5)
+
+**Actions:**
+1. Select `RMXGovernor` in Contract dropdown
+2. In Deploy parameters, enter:
+   ```
+   _token: [paste RMX_TOKEN address from Step 1]
+   _timelock: [paste TIMELOCK address from Step 5]
+   ```
+3. Click **Deploy** → Confirm in MetaMask
+
+**📝 RECORD:**
+```
+GOVERNOR = 0x________________________________
+```
+
+**✅ Verify:**
+- Call `votingDelay()` → Should return `7200` (~1 day in blocks)
+- Call `votingPeriod()` → Should return `50400` (~7 days in blocks)
+- Call `proposalThreshold()` → Should return `100000000000000000000000` (100k RMX)
+
+---
+
+## STEP 7: Deploy TokenFactory
+
+### Contract: `TokenFactory.sol`
+### Constructor: None
+### Depends on: Nothing directly (will be configured after)
+
+**Actions:**
+1. Select `TokenFactory` in Contract dropdown
+2. Leave Deploy parameters empty
+3. Click **Deploy** → Confirm in MetaMask
+
+**📝 RECORD:**
+```
+TOKEN_FACTORY = 0x________________________________
+```
+
+**✅ Verify:**
+- Call `owner()` → Should return your wallet address
+- Call `getTotalTokens()` → Should return `0`
+
+---
+
+# ⚙️ POST-DEPLOYMENT CONFIGURATION
+
+After all 7 contracts are deployed, configure them:
+
+---
+
+## CONFIG 1: Configure RevenueDistribution
+
+On the `RevenueDistribution` contract, call `setAddresses`:
+
+```
+_stakingContract: [RMX_STAKING address from Step 4]
+_developmentWallet: [Your DEV_WALLET address]
+_operationsWallet: [Your OPS_WALLET address]
+```
+
+**✅ Verify:**
+- Call `stakingContract()` → Should return RMX_STAKING address
+- Call `developmentWallet()` → Should return DEV_WALLET
+- Call `operationsWallet()` → Should return OPS_WALLET
+
+---
+
+## CONFIG 2: Configure TokenFactory
+
+On the `TokenFactory` contract, call `setDefaultRevenueContract`:
+
+```
+_revenueContract: [REVENUE_DIST address from Step 3]
+```
+
+**✅ Verify:**
+- Call `defaultRevenueContract()` → Should return REVENUE_DIST address
+
+---
+
+## CONFIG 3: Grant Governor Role to Timelock
+
+On the `TimelockController` contract:
+
+1. First, get the PROPOSER_ROLE:
+   - Call `PROPOSER_ROLE()` → Returns `0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1`
+
+2. Grant PROPOSER_ROLE to Governor:
+   - Call `grantRole`:
+   ```
+   role: 0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1
+   account: [GOVERNOR address from Step 6]
+   ```
+
+**✅ Verify:**
+- Call `hasRole(PROPOSER_ROLE, GOVERNOR)` → Should return `true`
+
+---
+
+## CONFIG 4: (Optional) Create Vesting Schedules
+
+For team/partner token vesting, first approve then create schedules:
+
+### 4a. Approve TokenVesting to spend RMX
+On `RMXToken`, call `approve`:
+```
+spender: [TOKEN_VESTING address from Step 2]
+amount: 350000000000000000000000000 (350M RMX for team + partners)
+```
+
+### 4b. Create Team Vesting (20% = 200M RMX)
+On `TokenVesting`, call `createVestingSchedule`:
+```
+beneficiary: [TEAM_WALLET address]
+amount: 200000000000000000000000000 (200M * 10^18)
+startTime: [current timestamp or future date]
+cliffDuration: 15778800 (6 months in seconds)
+vestingDuration: 63115200 (24 months in seconds)
+revocable: false
+```
+
+### 4c. Create Partnership Vesting (15% = 150M RMX)
+On `TokenVesting`, call `createVestingSchedule`:
+```
+beneficiary: [PARTNERSHIP_WALLET address]
+amount: 150000000000000000000000000 (150M * 10^18)
+startTime: [current timestamp]
+cliffDuration: 0 (no cliff for partners)
+vestingDuration: 31557600 (12 months in seconds)
+revocable: true
 ```
 
 ---
 
-### Step 4.4: Deploy RMXStaking (Third)
+## CONFIG 5: (Final) Renounce Timelock Admin
 
-1. In **CONTRACT** dropdown, select: `RMXStaking`
-2. In the deploy input field, paste your **RMXToken address** (same as step 4.3)
-3. Click orange **"Deploy"** button
-4. Confirm in MetaMask
+⚠️ **ONLY DO THIS WHEN EVERYTHING IS CONFIRMED WORKING**
 
-**📋 SAVE THIS ADDRESS:**
+On `TimelockController`, call `renounceRole`:
 ```
-RMXStaking = 0x________________________________
+role: [TIMELOCK_ADMIN_ROLE - call TIMELOCK_ADMIN_ROLE() first]
+callerConfirmation: [YOUR_WALLET address]
+```
+
+This removes your admin access, making the system fully decentralized.
+
+---
+
+# 📊 ARCHITECTURE DIAGRAMS
+
+## Revenue Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     APP REVENUE (ETH)                       │
+└─────────────────────────────┬───────────────────────────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │    AppToken     │
+                    │ (auto-deployed) │
+                    └────────┬────────┘
+                             │
+         ┌───────────────────┼───────────────────┐
+         │                   │                   │
+         ▼                   ▼                   ▼
+    ┌─────────┐       ┌────────────┐      ┌─────────────┐
+    │   85%   │       │    10%     │      │     5%      │
+    │ Builder │       │  Stakers   │      │  Platform   │
+    └─────────┘       └─────┬──────┘      └──────┬──────┘
+                            │                    │
+                            ▼                    ▼
+                   ┌────────────────┐    ┌─────────────────┐
+                   │AppTokenStaking │    │RevenueDistribution│
+                   │ (auto-deployed)│    └────────┬────────┘
+                   └────────────────┘             │
+                                      ┌──────────┼──────────┐
+                                      │          │          │
+                                      ▼          ▼          ▼
+                                 ┌────────┐ ┌────────┐ ┌────────┐
+                                 │  85%   │ │  10%   │ │   5%   │
+                                 │RMX Stak│ │Dev Fund│ │Ops Fund│
+                                 └───┬────┘ └────────┘ └────────┘
+                                     │
+                                     ▼
+                              ┌──────────────┐
+                              │  RMXStaking  │
+                              └──────────────┘
+```
+
+## Governance Flow
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                     GOVERNANCE PROCESS                        │
+└──────────────────────────────────────────────────────────────┘
+
+Step 1: PROPOSAL (requires 100,000 RMX)
+        └── RMX holder calls RMXGovernor.propose()
+
+Step 2: VOTING DELAY (~1 day / 7200 blocks)
+        └── Users can acquire RMX before voting
+
+Step 3: VOTING PERIOD (~7 days / 50400 blocks)
+        └── RMX holders vote: For / Against / Abstain
+        └── Quorum: 4% of supply (40M RMX)
+
+Step 4: QUEUE (if passed)
+        └── Governor.queue() → TimelockController
+
+Step 5: TIMELOCK DELAY (48 hours)
+        └── Community can react
+
+Step 6: EXECUTION
+        └── Anyone calls Governor.execute()
 ```
 
 ---
 
-### Step 4.5: Deploy TokenFactory (Fourth)
+# ✅ FINAL VERIFICATION CHECKLIST
 
-1. In **CONTRACT** dropdown, select: `TokenFactory`
-2. Leave parameters empty
-3. Click orange **"Deploy"** button
-4. Confirm in MetaMask
+After all deployments and configurations:
 
-**📋 SAVE THIS ADDRESS:**
-```
-TokenFactory = 0x________________________________
-```
-
----
-
-## Phase 5: Post-Deployment Configuration
-
-### Step 5.1: Configure RevenueDistribution
-
-This is **CRITICAL** - connects staking to receive 85% of fees!
-
-1. In "Deployed Contracts", expand **RevenueDistribution**
-2. Find the `setAddresses` function
-3. Fill in parameters:
-   - `_stakingContract`: Your RMXStaking address
-   - `_developmentWallet`: Your dev wallet address
-   - `_operationsWallet`: Your ops wallet address
-4. Click **"transact"**
-5. Confirm in MetaMask
-
-### Step 5.2: Configure TokenFactory
-
-1. In "Deployed Contracts", expand **TokenFactory**
-2. Find the `setDefaultRevenueContract` function
-3. Enter your **RevenueDistribution address**
-4. Click **"transact"**
-5. Confirm in MetaMask
+- [ ] RMXToken deployed with 1B supply
+- [ ] TokenVesting linked to RMXToken
+- [ ] RevenueDistribution configured with staking, dev, ops wallets
+- [ ] RMXStaking linked to RMXToken
+- [ ] TimelockController with 48-hour delay
+- [ ] RMXGovernor linked to token and timelock
+- [ ] Governor has PROPOSER_ROLE on Timelock
+- [ ] TokenFactory configured with RevenueDistribution
+- [ ] (Optional) Vesting schedules created for team/partners
+- [ ] (Optional) Timelock admin renounced
 
 ---
 
-## Phase 6: Verification Checklist
-
-### ✅ Deployment Complete Checklist
-
-| Contract | Deployed? | Address Saved? | Configured? |
-|----------|-----------|----------------|-------------|
-| RMXToken | ☐ | ☐ | N/A |
-| RevenueDistribution | ☐ | ☐ | ☐ setAddresses called |
-| RMXStaking | ☐ | ☐ | N/A |
-| TokenFactory | ☐ | ☐ | ☐ setDefaultRevenueContract called |
-
-### Your Deployed Addresses
-
-```
-╔══════════════════════════════════════════════════════════════════╗
-║                    DEPLOYED CONTRACTS                            ║
-╠══════════════════════════════════════════════════════════════════╣
-║ Network: BASE Mainnet (Chain ID: 8453)                           ║
-║                                                                  ║
-║ RMXToken:             0x________________________________________  ║
-║ RevenueDistribution:  0x________________________________________  ║
-║ RMXStaking:           0x________________________________________  ║
-║ TokenFactory:         0x________________________________________  ║
-║                                                                  ║
-║ Deployer Wallet:      0x________________________________________  ║
-║ Development Wallet:   0x________________________________________  ║
-║ Operations Wallet:    0x________________________________________  ║
-╚══════════════════════════════════════════════════════════════════╝
-```
-
----
-
-## Phase 7: Verify on BaseScan (Optional)
-
-1. Go to [basescan.org](https://basescan.org)
-2. Paste contract address in search
-3. Click "Contract" → "Verify and Publish"
-4. Settings: Solidity (Single file), v0.8.19, MIT, Optimization: Yes/200
-5. Paste source code and verify
-
----
-
-## Phase 8: Test Contracts
-
-**Test RMXToken:**
-```
-- totalSupply → 1000000000000000000000000000 (1B with 18 decimals)
-- name → "Remixable"
-- symbol → "RMX"
-```
-
-**Test RMXStaking:**
-```
-- rmxToken → Should return RMXToken address
-- totalStaked → 0 (no stakers yet)
-```
-
-**Test TokenFactory:**
-```
-- getTotalTokens → 0 (no tokens created yet)
-- defaultRevenueContract → RevenueDistribution address
-```
-
----
-
-## Revenue Flow Diagram
-
-```
-User App Revenue (ETH)
-        │
-        ▼
-   AppToken.sol
-  ┌─────┴─────┐
-  │           │
- 95%         5%
-  │           │
-  ▼           ▼
-Creator   RevenueDistribution.sol
-          ┌───────┬───────┬───────┐
-          │       │       │
-         85%     10%      5%
-          │       │       │
-          ▼       ▼       ▼
-    RMXStaking   Dev     Ops
-    (Stakers)  Wallet  Wallet
-```
-
----
-
-## Troubleshooting
+# 🔧 TROUBLESHOOTING
 
 ### "Insufficient funds for gas"
-- Need more ETH on BASE Mainnet
-- Bridge via [bridge.base.org](https://bridge.base.org)
-
-### "Compilation failed"
-- Ensure compiler version is `0.8.19`
-- Check code was copied correctly
+Add more ETH to your wallet on BASE
 
 ### "Transaction failed"
-- Check you're on BASE Mainnet
-- Increase gas limit in MetaMask
+- Check constructor parameters are correct
+- Verify addresses are from the correct step
+- Ensure you're on BASE Mainnet
 
-### "setAddresses reverts"
-- Only owner can call - use deployer wallet
-- Ensure all addresses are valid
+### "Compilation failed"
+- Use Solidity 0.8.19 exactly
+- Check for typos in contract code
+
+### "Governor proposal failed"
+- Need >= 100,000 RMX to propose
+- Must delegate to yourself first: `rmxToken.delegate(yourAddress)`
 
 ---
 
-## Need Help?
+# 📋 FINAL ADDRESS SUMMARY
 
-Share your deployed addresses with the Remixable team to complete platform integration!
+Fill in after completion:
+
+```
+═══════════════════════════════════════════════════════════════
+REMIXABLE CONTRACT DEPLOYMENT - BASE MAINNET
+Deployed: [DATE]
+═══════════════════════════════════════════════════════════════
+
+CORE CONTRACTS:
+1. RMXToken:            0x...
+2. TokenVesting:        0x...
+3. RevenueDistribution: 0x...
+4. RMXStaking:          0x...
+5. TimelockController:  0x...
+6. RMXGovernor:         0x...
+7. TokenFactory:        0x...
+
+WALLETS:
+- Development:          0x...
+- Operations:           0x...
+- Team Vesting:         0x...
+- Partnership Vesting:  0x...
+
+AUTO-DEPLOYED (by TokenFactory):
+- AppToken:            (created per user)
+- AppTokenStaking:     (created per user)
+
+═══════════════════════════════════════════════════════════════
+```
