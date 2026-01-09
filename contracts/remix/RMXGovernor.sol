@@ -11,13 +11,8 @@ pragma solidity ^0.8.24;
 //
 // REMIX DEPLOYMENT PARAMETERS (COPY/PASTE READY):
 // ================================================
-// _token:    [PASTE YOUR DEPLOYED RMXToken ADDRESS HERE]
-// _timelock: [PASTE YOUR DEPLOYED TimelockController ADDRESS HERE]
-//
-// EXAMPLE FORMAT:
-// ---------------
-// _token:    0x1234567890abcdef1234567890abcdef12345678
-// _timelock: 0xabcdef1234567890abcdef1234567890abcdef12
+// _token:    0x0Bab8DbA1d4800F8E6A699c1ea9A0e5860c2C12B
+// _timelock: 0xc079d282F43d95630DBc39d46F19cF4a09Ded7A4
 //
 // ============================================================================
 
