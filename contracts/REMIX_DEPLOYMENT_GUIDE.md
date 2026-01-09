@@ -9,7 +9,7 @@
 Before starting, ensure you have:
 - [ ] MetaMask wallet installed in your browser
 - [ ] Wallet connected to **BASE Mainnet**
-- [ ] At least **0.01 ETH** on BASE for gas fees
+- [ ] At least **0.02 ETH** on BASE for gas fees (5 contracts)
 - [ ] This guide open alongside Remix IDE
 
 ### Add BASE Mainnet to MetaMask
@@ -28,6 +28,18 @@ Or manually add:
 
 ---
 
+## Contract Overview
+
+| Contract | Purpose | Constructor Params |
+|----------|---------|-------------------|
+| `RMXToken.sol` | Platform governance token (1B supply) | None |
+| `RevenueDistribution.sol` | Distributes platform fees | RMXToken address |
+| `RMXStaking.sol` | Stake RMX to earn 85% of fees | RMXToken address |
+| `AppToken.sol` | Template for user app tokens | (Created by factory) |
+| `TokenFactory.sol` | Factory to create AppTokens | None |
+
+---
+
 ## Phase 1: Setup Remix IDE
 
 ### Step 1.1: Open Remix IDE
@@ -38,24 +50,21 @@ Or manually add:
    - **Main panel**: Code editor
    - **Bottom panel**: Terminal/console
 
-> 📸 **What you'll see**: A dark IDE interface with a file tree on the left showing "contracts" and "scripts" folders
-
 ### Step 1.2: Create Contract Files
 
 In the File Explorer (left sidebar):
 
 1. **Right-click** on the `contracts` folder
 2. Select **"New File"**
-3. Create these 4 files (one at a time):
+3. Create these 5 files (one at a time):
 
 | File Name | Purpose |
 |-----------|---------|
 | `RMXToken.sol` | Platform governance token |
 | `RevenueDistribution.sol` | Revenue sharing contract |
+| `RMXStaking.sol` | Staking for rewards |
 | `AppToken.sol` | Template for user app tokens |
 | `TokenFactory.sol` | Factory to create AppTokens |
-
-> 📸 **What you'll see**: Four new `.sol` files in your contracts folder
 
 ---
 
@@ -75,7 +84,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract RMXToken is ERC20, Ownable {
     uint256 public constant TOTAL_SUPPLY = 1_000_000_000 * 10**18; // 1B tokens
     
-    constructor() ERC20("Remixable", "RMX") {
+    constructor() ERC20("Remixable", "RMX") Ownable(msg.sender) {
         _mint(msg.sender, TOTAL_SUPPLY);
     }
     
@@ -108,8 +117,9 @@ contract RevenueDistribution is Ownable {
     address public operationsWallet;
     
     event RevenueDistributed(uint256 total, uint256 staking, uint256 development, uint256 operations);
+    event AddressesUpdated(address staking, address development, address operations);
     
-    constructor(address _rmxToken) {
+    constructor(address _rmxToken) Ownable(msg.sender) {
         rmxToken = IERC20(_rmxToken);
     }
     
@@ -121,6 +131,7 @@ contract RevenueDistribution is Ownable {
         stakingContract = _stakingContract;
         developmentWallet = _developmentWallet;
         operationsWallet = _operationsWallet;
+        emit AddressesUpdated(_stakingContract, _developmentWallet, _operationsWallet);
     }
     
     receive() external payable {
@@ -152,10 +163,141 @@ contract RevenueDistribution is Ownable {
         
         emit RevenueDistributed(balance, stakingAmount, developmentAmount, operationsAmount);
     }
+    
+    function getBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
 }
 ```
 
-### Step 2.3: AppToken.sol
+### Step 2.3: RMXStaking.sol
+
+Click on `RMXStaking.sol` and paste:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+contract RMXStaking is Ownable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
+    IERC20 public immutable rmxToken;
+    
+    uint256 public totalStaked;
+    mapping(address => uint256) public stakedBalance;
+    
+    uint256 public rewardPerTokenStored;
+    mapping(address => uint256) public userRewardPerTokenPaid;
+    mapping(address => uint256) public pendingRewards;
+    
+    address[] public stakers;
+    mapping(address => bool) public isStaker;
+    
+    event Staked(address indexed user, uint256 amount);
+    event Unstaked(address indexed user, uint256 amount);
+    event RewardsClaimed(address indexed user, uint256 amount);
+    event RewardsDistributed(uint256 amount, uint256 newRewardPerToken);
+    
+    constructor(address _rmxToken) Ownable(msg.sender) {
+        require(_rmxToken != address(0), "Invalid token address");
+        rmxToken = IERC20(_rmxToken);
+    }
+    
+    receive() external payable {
+        if (msg.value > 0 && totalStaked > 0) {
+            uint256 rewardPerToken = (msg.value * 1e18) / totalStaked;
+            rewardPerTokenStored += rewardPerToken;
+            emit RewardsDistributed(msg.value, rewardPerTokenStored);
+        }
+    }
+    
+    modifier updateReward(address account) {
+        if (account != address(0) && stakedBalance[account] > 0) {
+            pendingRewards[account] = earned(account);
+            userRewardPerTokenPaid[account] = rewardPerTokenStored;
+        }
+        _;
+    }
+    
+    function earned(address account) public view returns (uint256) {
+        uint256 balance = stakedBalance[account];
+        if (balance == 0) return pendingRewards[account];
+        uint256 rewardDelta = rewardPerTokenStored - userRewardPerTokenPaid[account];
+        return pendingRewards[account] + (balance * rewardDelta) / 1e18;
+    }
+    
+    function stake(uint256 amount) external nonReentrant updateReward(msg.sender) {
+        require(amount > 0, "Cannot stake 0");
+        
+        if (!isStaker[msg.sender]) {
+            stakers.push(msg.sender);
+            isStaker[msg.sender] = true;
+        }
+        
+        stakedBalance[msg.sender] += amount;
+        totalStaked += amount;
+        
+        rmxToken.safeTransferFrom(msg.sender, address(this), amount);
+        emit Staked(msg.sender, amount);
+    }
+    
+    function unstake(uint256 amount) external nonReentrant updateReward(msg.sender) {
+        require(amount > 0, "Cannot unstake 0");
+        require(stakedBalance[msg.sender] >= amount, "Insufficient staked balance");
+        
+        stakedBalance[msg.sender] -= amount;
+        totalStaked -= amount;
+        
+        rmxToken.safeTransfer(msg.sender, amount);
+        emit Unstaked(msg.sender, amount);
+    }
+    
+    function claimRewards() external nonReentrant updateReward(msg.sender) {
+        uint256 reward = pendingRewards[msg.sender];
+        require(reward > 0, "No rewards to claim");
+        
+        pendingRewards[msg.sender] = 0;
+        
+        (bool success, ) = msg.sender.call{value: reward}("");
+        require(success, "Reward transfer failed");
+        emit RewardsClaimed(msg.sender, reward);
+    }
+    
+    function exit() external nonReentrant updateReward(msg.sender) {
+        uint256 stakedAmount = stakedBalance[msg.sender];
+        uint256 reward = pendingRewards[msg.sender];
+        
+        if (stakedAmount > 0) {
+            stakedBalance[msg.sender] = 0;
+            totalStaked -= stakedAmount;
+            rmxToken.safeTransfer(msg.sender, stakedAmount);
+            emit Unstaked(msg.sender, stakedAmount);
+        }
+        
+        if (reward > 0) {
+            pendingRewards[msg.sender] = 0;
+            (bool success, ) = msg.sender.call{value: reward}("");
+            require(success, "Reward transfer failed");
+            emit RewardsClaimed(msg.sender, reward);
+        }
+    }
+    
+    function getStakerCount() external view returns (uint256) {
+        return stakers.length;
+    }
+    
+    function getContractBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
+}
+```
+
+### Step 2.4: AppToken.sol
 
 Click on `AppToken.sol` and paste:
 
@@ -178,8 +320,7 @@ contract AppToken is ERC20, Ownable {
         uint256 totalSupply,
         address creator,
         address _revenueContract
-    ) ERC20(name, symbol) {
-        _transferOwnership(creator);
+    ) ERC20(name, symbol) Ownable(creator) {
         revenueContract = _revenueContract;
         _mint(creator, totalSupply * 10**18);
     }
@@ -190,22 +331,28 @@ contract AppToken is ERC20, Ownable {
         uint256 platformFee = (msg.value * PLATFORM_FEE) / 10000;
         uint256 ownerAmount = msg.value - platformFee;
         
-        // Send platform fee to revenue contract
         if (revenueContract != address(0)) {
             (bool success,) = revenueContract.call{value: platformFee}("");
             require(success, "Platform fee transfer failed");
         }
         
-        // Send remainder to token owner
         (bool success,) = owner().call{value: ownerAmount}("");
         require(success, "Owner transfer failed");
         
         emit RevenueDistributed(msg.value, platformFee);
     }
+    
+    function setRevenueContract(address _newRevenueContract) external onlyOwner {
+        revenueContract = _newRevenueContract;
+    }
+    
+    function burn(uint256 amount) external {
+        _burn(msg.sender, amount);
+    }
 }
 ```
 
-### Step 2.4: TokenFactory.sol
+### Step 2.5: TokenFactory.sol
 
 Click on `TokenFactory.sol` and paste:
 
@@ -220,6 +367,21 @@ contract TokenFactory {
     
     mapping(address => address[]) public userTokens;
     address[] public allTokens;
+    address public defaultRevenueContract;
+    address public owner;
+    
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not owner");
+        _;
+    }
+    
+    constructor() {
+        owner = msg.sender;
+    }
+    
+    function setDefaultRevenueContract(address _revenueContract) external onlyOwner {
+        defaultRevenueContract = _revenueContract;
+    }
     
     function createToken(
         string memory name,
@@ -227,6 +389,8 @@ contract TokenFactory {
         uint256 totalSupply,
         address revenueContract
     ) external returns (address) {
+        address revContract = revenueContract != address(0) ? revenueContract : defaultRevenueContract;
+        
         bytes32 salt = keccak256(abi.encodePacked(msg.sender, name, symbol, block.timestamp));
         
         AppToken token = new AppToken{salt: salt}(
@@ -234,7 +398,7 @@ contract TokenFactory {
             symbol,
             totalSupply,
             msg.sender,
-            revenueContract
+            revContract
         );
         
         address tokenAddress = address(token);
@@ -252,10 +416,14 @@ contract TokenFactory {
     function getTotalTokens() external view returns (uint256) {
         return allTokens.length;
     }
+    
+    function getUserTokenCount(address user) external view returns (uint256) {
+        return userTokens[user].length;
+    }
 }
 ```
 
-> ✅ **Checkpoint**: You should now have 4 files with code and no red error underlines
+> ✅ **Checkpoint**: You should now have 5 files with code and no red error underlines
 
 ---
 
@@ -265,8 +433,6 @@ contract TokenFactory {
 
 1. Click the **Solidity Compiler** icon in the left sidebar (looks like an "S" with arrows)
 2. You'll see compiler settings panel
-
-> 📸 **What you'll see**: A panel titled "SOLIDITY COMPILER" with version dropdown and compile button
 
 ### Step 3.2: Set Compiler Version
 
@@ -280,47 +446,31 @@ contract TokenFactory {
 2. Check ✅ **"Enable optimization"**
 3. Set optimization runs to: `200`
 
-> 📸 **What you'll see**: Optimization checkbox checked, runs field showing "200"
-
 ### Step 3.4: Compile All Contracts
 
 1. In File Explorer, click on `TokenFactory.sol` (this imports others)
 2. Click the blue **"Compile TokenFactory.sol"** button
 3. Wait for compilation (may take 10-30 seconds)
+4. **Also compile** `RMXStaking.sol` separately (it's standalone)
 
 **Success indicators:**
 - ✅ Green checkmark appears on compiler icon
 - ✅ No red errors in the terminal
 - ✅ "Compilation successful" message
 
-> ⚠️ **If you see errors**: Make sure you copied the code exactly, including all import statements
-
 ---
 
 ## Phase 4: Deploy Contracts
 
-### Step 4.1: Open Deploy Panel
-
-1. Click the **Deploy & Run** icon in left sidebar (looks like an arrow pointing to a box)
-2. You'll see deployment settings
-
-> 📸 **What you'll see**: Panel with "ENVIRONMENT", "ACCOUNT", "CONTRACT" dropdowns
-
-### Step 4.2: Connect MetaMask
+### Step 4.1: Connect MetaMask
 
 1. In **ENVIRONMENT** dropdown, select: `Injected Provider - MetaMask`
 2. MetaMask popup will appear - click **Connect**
 3. Ensure you're on **BASE Mainnet** (Chain ID 8453)
 
-**Verify connection:**
-- Account field shows your wallet address
-- Balance shows your ETH on BASE
-
-> ⚠️ **Wrong network?** Click the network name in MetaMask and switch to "Base"
-
 ---
 
-## Deploy Order: Critical!
+## ⚠️ Deploy Order: CRITICAL!
 
 You **MUST** deploy in this exact order:
 
@@ -329,174 +479,204 @@ You **MUST** deploy in this exact order:
      ↓
 2. RevenueDistribution (needs RMXToken address)
      ↓  
-3. TokenFactory (no parameters)
+3. RMXStaking (needs RMXToken address)
+     ↓
+4. TokenFactory (no parameters)
 ```
 
 ---
 
-### Step 4.3: Deploy RMXToken (First)
+### Step 4.2: Deploy RMXToken (First)
 
-1. In **CONTRACT** dropdown, select: `RMXToken - contracts/RMXToken.sol`
-2. Leave the constructor parameters empty (none needed)
+1. In **CONTRACT** dropdown, select: `RMXToken`
+2. Leave constructor parameters empty
 3. Click orange **"Deploy"** button
-4. MetaMask popup appears - click **Confirm**
-5. Wait for transaction confirmation (10-30 seconds)
+4. Confirm in MetaMask
+5. Wait for confirmation
 
-**After deployment:**
-- Contract appears in "Deployed Contracts" section below
-- **COPY THE ADDRESS** by clicking the copy icon next to contract name
-
+**📋 SAVE THIS ADDRESS:**
 ```
-📋 Save this: RMXToken Address = 0x________________
+RMXToken = 0x________________________________
 ```
-
-> 📸 **What you'll see**: Deployed contract expandable section showing RMXToken with its address
 
 ---
 
-### Step 4.4: Deploy RevenueDistribution (Second)
+### Step 4.3: Deploy RevenueDistribution (Second)
 
 1. In **CONTRACT** dropdown, select: `RevenueDistribution`
-2. In the deploy input field, paste your **RMXToken address**:
-   ```
-   0xYOUR_RMX_TOKEN_ADDRESS_HERE
-   ```
+2. In the deploy input field, paste your **RMXToken address**
 3. Click orange **"Deploy"** button
 4. Confirm in MetaMask
-5. Wait for confirmation
 
-**After deployment:**
-- **COPY THE ADDRESS**
-
+**📋 SAVE THIS ADDRESS:**
 ```
-📋 Save this: RevenueDistribution Address = 0x________________
+RevenueDistribution = 0x________________________________
 ```
-
-> ⚠️ **Constructor parameter**: The input field next to Deploy button should show your RMXToken address before clicking deploy
 
 ---
 
-### Step 4.5: Deploy TokenFactory (Third)
+### Step 4.4: Deploy RMXStaking (Third)
+
+1. In **CONTRACT** dropdown, select: `RMXStaking`
+2. In the deploy input field, paste your **RMXToken address** (same as step 4.3)
+3. Click orange **"Deploy"** button
+4. Confirm in MetaMask
+
+**📋 SAVE THIS ADDRESS:**
+```
+RMXStaking = 0x________________________________
+```
+
+---
+
+### Step 4.5: Deploy TokenFactory (Fourth)
 
 1. In **CONTRACT** dropdown, select: `TokenFactory`
-2. Leave parameters empty (none needed)
+2. Leave parameters empty
 3. Click orange **"Deploy"** button
 4. Confirm in MetaMask
-5. Wait for confirmation
 
-**After deployment:**
-- **COPY THE ADDRESS**
-
+**📋 SAVE THIS ADDRESS:**
 ```
-📋 Save this: TokenFactory Address = 0x________________
+TokenFactory = 0x________________________________
 ```
 
 ---
 
-## Phase 5: Verification Checklist
+## Phase 5: Post-Deployment Configuration
+
+### Step 5.1: Configure RevenueDistribution
+
+This is **CRITICAL** - connects staking to receive 85% of fees!
+
+1. In "Deployed Contracts", expand **RevenueDistribution**
+2. Find the `setAddresses` function
+3. Fill in parameters:
+   - `_stakingContract`: Your RMXStaking address
+   - `_developmentWallet`: Your dev wallet address
+   - `_operationsWallet`: Your ops wallet address
+4. Click **"transact"**
+5. Confirm in MetaMask
+
+### Step 5.2: Configure TokenFactory
+
+1. In "Deployed Contracts", expand **TokenFactory**
+2. Find the `setDefaultRevenueContract` function
+3. Enter your **RevenueDistribution address**
+4. Click **"transact"**
+5. Confirm in MetaMask
+
+---
+
+## Phase 6: Verification Checklist
 
 ### ✅ Deployment Complete Checklist
 
-| Contract | Deployed? | Address Saved? |
-|----------|-----------|----------------|
-| RMXToken | ☐ | ☐ |
-| RevenueDistribution | ☐ | ☐ |
-| TokenFactory | ☐ | ☐ |
+| Contract | Deployed? | Address Saved? | Configured? |
+|----------|-----------|----------------|-------------|
+| RMXToken | ☐ | ☐ | N/A |
+| RevenueDistribution | ☐ | ☐ | ☐ setAddresses called |
+| RMXStaking | ☐ | ☐ | N/A |
+| TokenFactory | ☐ | ☐ | ☐ setDefaultRevenueContract called |
 
 ### Your Deployed Addresses
 
-Copy this template and fill in your addresses:
-
 ```
-╔══════════════════════════════════════════════════════════════╗
-║                    DEPLOYED CONTRACTS                        ║
-╠══════════════════════════════════════════════════════════════╣
-║ Network: BASE Mainnet (Chain ID: 8453)                       ║
-║                                                              ║
-║ RMXToken:            0x________________________________      ║
-║ RevenueDistribution: 0x________________________________      ║
-║ TokenFactory:        0x________________________________      ║
-║                                                              ║
-║ Deployer Wallet:     0x________________________________      ║
-╚══════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════╗
+║                    DEPLOYED CONTRACTS                            ║
+╠══════════════════════════════════════════════════════════════════╣
+║ Network: BASE Mainnet (Chain ID: 8453)                           ║
+║                                                                  ║
+║ RMXToken:             0x________________________________________  ║
+║ RevenueDistribution:  0x________________________________________  ║
+║ RMXStaking:           0x________________________________________  ║
+║ TokenFactory:         0x________________________________________  ║
+║                                                                  ║
+║ Deployer Wallet:      0x________________________________________  ║
+║ Development Wallet:   0x________________________________________  ║
+║ Operations Wallet:    0x________________________________________  ║
+╚══════════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
-## Phase 6: Verify on BaseScan (Optional but Recommended)
-
-### Step 6.1: Open BaseScan
+## Phase 7: Verify on BaseScan (Optional)
 
 1. Go to [basescan.org](https://basescan.org)
-2. Paste any of your contract addresses in the search bar
-
-### Step 6.2: Verify Contract
-
-1. Click on the **"Contract"** tab
-2. Click **"Verify and Publish"**
-3. Fill in:
-   - **Compiler Type**: Solidity (Single file)
-   - **Compiler Version**: v0.8.19+commit.7dd6d404
-   - **License**: MIT
-4. Paste the contract source code
-5. Enable optimization: Yes, 200 runs
-6. Click **"Verify and Publish"**
+2. Paste contract address in search
+3. Click "Contract" → "Verify and Publish"
+4. Settings: Solidity (Single file), v0.8.19, MIT, Optimization: Yes/200
+5. Paste source code and verify
 
 ---
 
-## Phase 7: Configure Remixable Platform
+## Phase 8: Test Contracts
 
-Once you have all three addresses, share them and we'll update:
+**Test RMXToken:**
+```
+- totalSupply → 1000000000000000000000000000 (1B with 18 decimals)
+- name → "Remixable"
+- symbol → "RMX"
+```
 
-1. **`src/lib/web3.config.ts`** - Add contract addresses
-2. **Supabase Secrets** - Add `DEPLOYER_PRIVATE_KEY`
-3. **Edge Function** - Update to call TokenFactory
+**Test RMXStaking:**
+```
+- rmxToken → Should return RMXToken address
+- totalStaked → 0 (no stakers yet)
+```
+
+**Test TokenFactory:**
+```
+- getTotalTokens → 0 (no tokens created yet)
+- defaultRevenueContract → RevenueDistribution address
+```
+
+---
+
+## Revenue Flow Diagram
+
+```
+User App Revenue (ETH)
+        │
+        ▼
+   AppToken.sol
+  ┌─────┴─────┐
+  │           │
+ 95%         5%
+  │           │
+  ▼           ▼
+Creator   RevenueDistribution.sol
+          ┌───────┬───────┬───────┐
+          │       │       │
+         85%     10%      5%
+          │       │       │
+          ▼       ▼       ▼
+    RMXStaking   Dev     Ops
+    (Stakers)  Wallet  Wallet
+```
 
 ---
 
 ## Troubleshooting
 
 ### "Insufficient funds for gas"
-- You need more ETH on BASE Mainnet
-- Bridge ETH from Ethereum via [bridge.base.org](https://bridge.base.org)
+- Need more ETH on BASE Mainnet
+- Bridge via [bridge.base.org](https://bridge.base.org)
 
 ### "Compilation failed"
-- Ensure compiler version is exactly `0.8.19`
-- Check all code was copied correctly (no missing characters)
-- OpenZeppelin imports should auto-resolve in Remix
+- Ensure compiler version is `0.8.19`
+- Check code was copied correctly
 
 ### "Transaction failed"
-- Check you're on BASE Mainnet, not testnet
-- Increase gas limit in MetaMask advanced options
-- Wait and retry - network may be congested
+- Check you're on BASE Mainnet
+- Increase gas limit in MetaMask
 
-### "MetaMask not connecting"
-- Refresh Remix page
-- Disconnect/reconnect MetaMask
-- Try a different browser
-
----
-
-## Quick Reference Commands
-
-After deployment, you can test contracts in Remix:
-
-**Test RMXToken:**
-- Click `totalSupply` → Should return 1000000000000000000000000000 (1B with 18 decimals)
-- Click `name` → Should return "Remixable"
-- Click `symbol` → Should return "RMX"
-
-**Test TokenFactory:**
-- Click `getTotalTokens` → Should return 0 (no tokens created yet)
+### "setAddresses reverts"
+- Only owner can call - use deployer wallet
+- Ensure all addresses are valid
 
 ---
 
 ## Need Help?
 
-If you encounter issues:
-1. Take a screenshot of the error
-2. Note which step you're on
-3. Share the error message with the team
-
-**Common transaction explorer:**
-Check your transactions at: `https://basescan.org/address/YOUR_WALLET_ADDRESS`
+Share your deployed addresses with the Remixable team to complete platform integration!
