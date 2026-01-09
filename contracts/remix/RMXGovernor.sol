@@ -8,6 +8,18 @@ pragma solidity ^0.8.24;
 // Constructor: _token (RMXToken), _timelock (TimelockController)
 // Network: BASE Mainnet (Chain ID: 8453)
 // ============================================================================
+//
+// REMIX DEPLOYMENT PARAMETERS (COPY/PASTE READY):
+// ================================================
+// _token:    [PASTE YOUR DEPLOYED RMXToken ADDRESS HERE]
+// _timelock: [PASTE YOUR DEPLOYED TimelockController ADDRESS HERE]
+//
+// EXAMPLE FORMAT:
+// ---------------
+// _token:    0x1234567890abcdef1234567890abcdef12345678
+// _timelock: 0xabcdef1234567890abcdef1234567890abcdef12
+//
+// ============================================================================
 
 import "@openzeppelin/contracts/governance/Governor.sol";
 import "@openzeppelin/contracts/governance/extensions/GovernorSettings.sol";
