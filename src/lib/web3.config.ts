@@ -41,13 +41,13 @@ export const CONTRACT_ADDRESSES: Record<number, {
   tokenFactory: `0x${string}`;
 }> = {
   [base.id]: {
-    rmxToken: '0x0000000000000000000000000000000000000000', // Deploy #1
-    tokenVesting: '0x0000000000000000000000000000000000000000', // Deploy #2
-    revenueDistribution: '0x0000000000000000000000000000000000000000', // Deploy #3
-    rmxStaking: '0x0000000000000000000000000000000000000000', // Deploy #4
-    timelock: '0x0000000000000000000000000000000000000000', // Deploy #5
-    governor: '0x0000000000000000000000000000000000000000', // Deploy #6
-    tokenFactory: '0x0000000000000000000000000000000000000000', // Deploy #7
+    rmxToken: '0x0Bab8DbA1d4800F8E6A699c1ea9A0e5860c2C12B',
+    tokenVesting: '0x35dba54a76736c930bbc2d5672fa3a297cb38bb8',
+    revenueDistribution: '0x7352d9aa7d17a42db71421d7d5c28881618aeba6',
+    rmxStaking: '0x5c03979381e6bd2ed2b6347f6cd9f4e995bdbcfe',
+    timelock: '0xc079d282F43d95630DBc39d46F19cF4a09Ded7A4',
+    governor: '0x9c59d488ad5798b6ae9bdd90d99e045d95196828',
+    tokenFactory: '0xb75c63c7986bb8433f102f9ea3275e74d1c4c6ee',
   },
   [baseGoerli.id]: {
     rmxToken: '0x0000000000000000000000000000000000000000',
