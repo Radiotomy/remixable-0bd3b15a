@@ -8,19 +8,12 @@ pragma solidity ^0.8.24;
 // Network: BASE Mainnet (Chain ID: 8453)
 // ============================================================================
 //
-// REMIX DEPLOYMENT PARAMETERS:
-// ============================
+// REMIX DEPLOYMENT PARAMETERS (COPY/PASTE READY):
+// ================================================
 // minDelay:   172800
 // proposers:  []
 // executors:  ["0x0000000000000000000000000000000000000000"]
-// admin:      [YOUR_DEPLOYER_WALLET_ADDRESS]
-//
-// EXAMPLE (copy/paste ready):
-// ---------------------------
-// minDelay:   172800
-// proposers:  []
-// executors:  ["0x0000000000000000000000000000000000000000"]
-// admin:      0xYourWalletAddressHere
+// admin:      0xA73bF67c81C466baDE9cF2f0f34de6632D021C5F
 //
 // ============================================================================
 
