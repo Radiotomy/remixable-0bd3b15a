@@ -13,6 +13,7 @@ const Workspace = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("projects");
 
   useEffect(() => {
     checkAuth();
@@ -54,7 +55,7 @@ const Workspace = () => {
   };
 
   const handleCreateNew = () => {
-    navigate('/');
+    setActiveTab("create");
   };
 
   const handleOpenProject = (project: any) => {
@@ -101,7 +102,7 @@ const Workspace = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="projects" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
             <TabsTrigger value="projects" className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4" />
