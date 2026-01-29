@@ -14,7 +14,12 @@ export interface Project {
   user_id?: string
 }
 
-export const useFireproofProjects = () => {
+export interface FireproofConfig {
+  cloudSync?: boolean;
+  encryptionEnabled?: boolean;
+}
+
+export const useFireproofProjects = (config?: FireproofConfig) => {
   const { database } = useFireproof('remixable-projects')
   
   const projects = useLiveQuery((doc: any) => {
@@ -48,11 +53,61 @@ export const useFireproofProjects = () => {
     return await database.del(id)
   }
 
+  const getProject = async (id: string): Promise<Project | null> => {
+    try {
+      const doc = await database.get(id)
+      return doc as Project
+    } catch {
+      return null
+    }
+  }
+
+  const getAllProjects = async (): Promise<Project[]> => {
+    return projects.docs || []
+  }
+
+  const exportDatabase = async (): Promise<string> => {
+    const allDocs = projects.docs || []
+    return JSON.stringify(allDocs, null, 2)
+  }
+
+  const importToDatabase = async (jsonData: string): Promise<number> => {
+    const docs = JSON.parse(jsonData)
+    let imported = 0
+    for (const doc of docs) {
+      try {
+        await database.put({
+          ...doc,
+          _id: `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          updated_at: new Date().toISOString()
+        })
+        imported++
+      } catch (err) {
+        console.error('Failed to import doc:', err)
+      }
+    }
+    return imported
+  }
+
+  const clearDatabase = async (): Promise<void> => {
+    const allDocs = projects.docs || []
+    for (const doc of allDocs) {
+      if (doc._id) {
+        await database.del(doc._id)
+      }
+    }
+  }
+
   return {
     projects: projects.docs || [],
     saveProject,
     updateProject,
     deleteProject,
+    getProject,
+    getAllProjects,
+    exportDatabase,
+    importToDatabase,
+    clearDatabase,
     database
   }
 }
