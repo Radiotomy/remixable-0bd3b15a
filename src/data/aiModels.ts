@@ -133,14 +133,49 @@ export const CODE_GENERATION_MODELS: AIModel[] = [
 
   // OpenAI Models
   {
-    id: 'openai/gpt-5-2025-08-07',
+    id: 'openai/gpt-5.2',
+    name: 'GPT-5.2',
+    provider: 'OpenAI',
+    category: 'code',
+    tier: 'flagship',
+    pricing: { input: 3, output: 12, currency: 'USD' },
+    contextLength: 256000,
+    description: 'OpenAI\'s latest with enhanced reasoning capabilities for complex problem-solving',
+    capabilities: [
+      { name: 'Code Generation', rating: 5 },
+      { name: 'Debugging', rating: 5 },
+      { name: 'Architecture Design', rating: 5 },
+      { name: 'Refactoring', rating: 5 },
+      { name: 'Documentation', rating: 5 }
+    ],
+    strengths: [
+      'Enhanced reasoning over GPT-5',
+      'Excellent for complex problem-solving',
+      'Superior at multi-step planning',
+      'Best-in-class code understanding'
+    ],
+    weaknesses: [
+      'Higher cost than GPT-5',
+      'May be slower for simple tasks'
+    ],
+    bestFor: [
+      'Complex algorithmic challenges',
+      'Multi-step code transformations',
+      'Advanced debugging',
+      'System design'
+    ],
+    recommended: true,
+    releaseDate: '2025-12'
+  },
+  {
+    id: 'openai/gpt-5',
     name: 'GPT-5',
     provider: 'OpenAI',
     category: 'code',
     tier: 'flagship',
     pricing: { input: 2.5, output: 10, currency: 'USD' },
     contextLength: 200000,
-    description: 'OpenAI flagship with exceptional reasoning and broad knowledge',
+    description: 'Powerful all-rounder with excellent reasoning, long context, and multimodal support',
     capabilities: [
       { name: 'Code Generation', rating: 5 },
       { name: 'Debugging', rating: 5 },
@@ -168,14 +203,14 @@ export const CODE_GENERATION_MODELS: AIModel[] = [
     releaseDate: '2025-08'
   },
   {
-    id: 'openai/gpt-5-mini-2025-08-07',
+    id: 'openai/gpt-5-mini',
     name: 'GPT-5 Mini',
     provider: 'OpenAI',
     category: 'code',
     tier: 'balanced',
     pricing: { input: 0.15, output: 0.6, currency: 'USD' },
     contextLength: 200000,
-    description: 'Cost-efficient GPT-5 variant with strong performance',
+    description: 'Middle ground with lower cost while keeping most reasoning strengths',
     capabilities: [
       { name: 'Code Generation', rating: 4 },
       { name: 'Debugging', rating: 4 },
@@ -186,7 +221,8 @@ export const CODE_GENERATION_MODELS: AIModel[] = [
     strengths: [
       'Excellent value for money',
       'Fast responses',
-      'Good for most tasks'
+      'Good for most tasks',
+      'Keeps most GPT-5 capabilities'
     ],
     weaknesses: [
       'Slightly less capable than full GPT-5'
@@ -200,8 +236,113 @@ export const CODE_GENERATION_MODELS: AIModel[] = [
     recommended: true,
     releaseDate: '2025-08'
   },
+  {
+    id: 'openai/gpt-5-nano',
+    name: 'GPT-5 Nano',
+    provider: 'OpenAI',
+    category: 'code',
+    tier: 'fast',
+    pricing: { input: 0.05, output: 0.2, currency: 'USD' },
+    contextLength: 128000,
+    description: 'Designed for speed and cost savings on high-volume simple tasks',
+    capabilities: [
+      { name: 'Code Generation', rating: 3 },
+      { name: 'Debugging', rating: 3 },
+      { name: 'Architecture Design', rating: 2 },
+      { name: 'Refactoring', rating: 3 },
+      { name: 'Documentation', rating: 3 }
+    ],
+    strengths: [
+      'Extremely cost-effective',
+      'Very fast response times',
+      'Great for high-volume tasks'
+    ],
+    weaknesses: [
+      'Lower performance on hard reasoning',
+      'Less nuanced outputs',
+      'May struggle with edge cases'
+    ],
+    bestFor: [
+      'Simple code completions',
+      'High-volume simple tasks',
+      'Quick utility scripts',
+      'Basic CRUD operations'
+    ],
+    recommended: false,
+    releaseDate: '2025-08'
+  },
 
-  // Google Models
+  // Google Gemini Models
+  {
+    id: 'google/gemini-3-pro-preview',
+    name: 'Gemini 3 Pro Preview',
+    provider: 'Google',
+    category: 'code',
+    tier: 'flagship',
+    pricing: { input: 1.5, output: 6, currency: 'USD' },
+    contextLength: 2000000,
+    description: 'Next-generation Gemini Pro with enhanced reasoning and massive context',
+    capabilities: [
+      { name: 'Code Generation', rating: 5 },
+      { name: 'Debugging', rating: 5 },
+      { name: 'Architecture Design', rating: 5 },
+      { name: 'Refactoring', rating: 5 },
+      { name: 'Documentation', rating: 5 }
+    ],
+    strengths: [
+      'Massive 2M token context',
+      'Enhanced reasoning over 2.5 Pro',
+      'Can process entire large codebases',
+      'Strong multimodal capabilities'
+    ],
+    weaknesses: [
+      'Preview version may have quirks',
+      'Can be slower with full context'
+    ],
+    bestFor: [
+      'Very large codebase analysis',
+      'Complex refactoring projects',
+      'Enterprise migrations',
+      'Multi-repository analysis'
+    ],
+    recommended: true,
+    releaseDate: '2025-12'
+  },
+  {
+    id: 'google/gemini-3-flash-preview',
+    name: 'Gemini 3 Flash Preview',
+    provider: 'Google',
+    category: 'code',
+    tier: 'balanced',
+    pricing: { input: 0.1, output: 0.4, currency: 'USD' },
+    contextLength: 1000000,
+    description: 'Fast preview of next-gen Gemini with balanced speed and capability',
+    capabilities: [
+      { name: 'Code Generation', rating: 5 },
+      { name: 'Debugging', rating: 4 },
+      { name: 'Architecture Design', rating: 4 },
+      { name: 'Refactoring', rating: 4 },
+      { name: 'Documentation', rating: 4 }
+    ],
+    strengths: [
+      'Excellent speed-to-quality ratio',
+      'Large context window',
+      'Very cost-effective',
+      'Great for rapid iteration'
+    ],
+    weaknesses: [
+      'Preview version - may have occasional issues',
+      'Slightly less nuanced than Pro'
+    ],
+    bestFor: [
+      'Daily development tasks',
+      'Rapid prototyping',
+      'Code generation at scale',
+      'Team collaboration'
+    ],
+    recommended: true,
+    releaseDate: '2025-12'
+  },
   {
     id: 'google/gemini-2.5-pro',
     name: 'Gemini 2.5 Pro',
@@ -210,7 +351,7 @@ export const CODE_GENERATION_MODELS: AIModel[] = [
     tier: 'flagship',
     pricing: { input: 1.25, output: 5, currency: 'USD' },
     contextLength: 2000000,
-    description: 'Massive context window for handling large codebases',
+    description: 'Top-tier Gemini for visual + text, big context, and complex reasoning',
     capabilities: [
       { name: 'Code Generation', rating: 5 },
       { name: 'Debugging', rating: 5 },
@@ -245,7 +386,7 @@ export const CODE_GENERATION_MODELS: AIModel[] = [
     tier: 'balanced',
     pricing: { input: 0.075, output: 0.3, currency: 'USD' },
     contextLength: 1000000,
-    description: 'Fast and affordable with excellent multimodal support',
+    description: 'Balanced Gemini with good multimodal and reasoning at lower cost',
     capabilities: [
       { name: 'Code Generation', rating: 4 },
       { name: 'Debugging', rating: 4 },
@@ -260,7 +401,7 @@ export const CODE_GENERATION_MODELS: AIModel[] = [
       'Great for rapid development'
     ],
     weaknesses: [
-      'Slightly less nuanced than flagship models'
+      'Slightly less nuanced than Pro models'
     ],
     bestFor: [
       'High-volume development',
@@ -271,8 +412,78 @@ export const CODE_GENERATION_MODELS: AIModel[] = [
     recommended: true,
     releaseDate: '2025'
   },
+  {
+    id: 'google/gemini-2.5-flash-lite',
+    name: 'Gemini 2.5 Flash Lite',
+    provider: 'Google',
+    category: 'code',
+    tier: 'fast',
+    pricing: { input: 0.02, output: 0.08, currency: 'USD' },
+    contextLength: 500000,
+    description: 'Fastest and cheapest Gemini for simple workloads',
+    capabilities: [
+      { name: 'Code Generation', rating: 3 },
+      { name: 'Debugging', rating: 3 },
+      { name: 'Architecture Design', rating: 2 },
+      { name: 'Refactoring', rating: 3 },
+      { name: 'Documentation', rating: 3 }
+    ],
+    strengths: [
+      'Extremely fast',
+      'Lowest cost option',
+      'Good for classification tasks',
+      'Efficient for simple code'
+    ],
+    weaknesses: [
+      'Weakest on nuance and complexity',
+      'Limited reasoning capabilities'
+    ],
+    bestFor: [
+      'Code classification',
+      'Simple summarization',
+      'Basic completions',
+      'High-volume simple tasks'
+    ],
+    recommended: false,
+    releaseDate: '2025'
+  },
 
   // Specialized Models
+  {
+    id: 'deepseek/deepseek-coder-v3',
+    name: 'DeepSeek Coder V3',
+    provider: 'DeepSeek',
+    category: 'code',
+    tier: 'specialized',
+    pricing: { input: 0.1, output: 0.2, currency: 'USD' },
+    contextLength: 128000,
+    description: 'Latest code-specialized model with enhanced algorithmic capabilities',
+    capabilities: [
+      { name: 'Code Generation', rating: 5 },
+      { name: 'Debugging', rating: 4 },
+      { name: 'Architecture Design', rating: 3 },
+      { name: 'Refactoring', rating: 4 },
+      { name: 'Documentation', rating: 3 }
+    ],
+    strengths: [
+      'Excellent at algorithms',
+      'Strong data structure handling',
+      'Great for competitive programming',
+      'Very cost-effective'
+    ],
+    weaknesses: [
+      'Less strong with UI/UX',
+      'Limited architectural reasoning'
+    ],
+    bestFor: [
+      'Backend algorithms',
+      'Data processing',
+      'Performance optimization',
+      'Mathematical code'
+    ],
+    recommended: false,
+    releaseDate: '2025'
+  },
   {
     id: 'deepseek/deepseek-coder-v2',
     name: 'DeepSeek Coder V2',
@@ -307,6 +518,41 @@ export const CODE_GENERATION_MODELS: AIModel[] = [
     ],
     recommended: false,
     releaseDate: '2024'
+  },
+  {
+    id: 'meta-llama/llama-3.3-70b-instruct',
+    name: 'Llama 3.3 70B',
+    provider: 'Meta',
+    category: 'code',
+    tier: 'balanced',
+    pricing: { input: 0.4, output: 0.4, currency: 'USD' },
+    contextLength: 128000,
+    description: 'Latest Llama with improved code generation and instruction following',
+    capabilities: [
+      { name: 'Code Generation', rating: 4 },
+      { name: 'Debugging', rating: 4 },
+      { name: 'Architecture Design', rating: 3 },
+      { name: 'Refactoring', rating: 4 },
+      { name: 'Documentation', rating: 4 }
+    ],
+    strengths: [
+      'Open-source friendly',
+      'Improved instruction following',
+      'Strong with Python and JavaScript',
+      'Good cost-performance ratio'
+    ],
+    weaknesses: [
+      'Less capable than flagship models',
+      'May need more specific prompting'
+    ],
+    bestFor: [
+      'Open-source projects',
+      'Standard web development',
+      'Learning purposes',
+      'Privacy-sensitive projects'
+    ],
+    recommended: false,
+    releaseDate: '2024-12'
   },
   {
     id: 'meta-llama/codellama-70b-instruct',
@@ -378,6 +624,80 @@ export const CODE_GENERATION_MODELS: AIModel[] = [
   }
 ];
 
+// Image Generation Models
+export const IMAGE_GENERATION_MODELS: AIModel[] = [
+  {
+    id: 'google/gemini-3-pro-image-preview',
+    name: 'Gemini 3 Pro Image',
+    provider: 'Google',
+    category: 'image',
+    tier: 'flagship',
+    pricing: { input: 2, output: 8, currency: 'USD' },
+    contextLength: 100000,
+    description: 'Next-generation image generation model from Google',
+    capabilities: [
+      { name: 'Image Quality', rating: 5 },
+      { name: 'Text Understanding', rating: 5 },
+      { name: 'Style Variety', rating: 5 },
+      { name: 'Consistency', rating: 4 },
+      { name: 'Speed', rating: 4 }
+    ],
+    strengths: [
+      'Excellent image quality',
+      'Strong text-to-image understanding',
+      'Wide style range',
+      'Good at complex scenes'
+    ],
+    weaknesses: [
+      'Preview version',
+      'Higher cost'
+    ],
+    bestFor: [
+      'High-quality app graphics',
+      'Marketing materials',
+      'UI design mockups',
+      'Creative content'
+    ],
+    recommended: true,
+    releaseDate: '2025-12'
+  },
+  {
+    id: 'google/gemini-2.5-flash-image',
+    name: 'Gemini 2.5 Flash Image',
+    provider: 'Google',
+    category: 'image',
+    tier: 'balanced',
+    pricing: { input: 0.5, output: 2, currency: 'USD' },
+    contextLength: 50000,
+    description: 'Fast image generation based on text prompts (Nano banana)',
+    capabilities: [
+      { name: 'Image Quality', rating: 4 },
+      { name: 'Text Understanding', rating: 4 },
+      { name: 'Style Variety', rating: 4 },
+      { name: 'Consistency', rating: 4 },
+      { name: 'Speed', rating: 5 }
+    ],
+    strengths: [
+      'Fast generation',
+      'Cost-effective',
+      'Good for rapid iteration',
+      'Solid quality for most uses'
+    ],
+    weaknesses: [
+      'Less detail than Pro',
+      'May struggle with complex prompts'
+    ],
+    bestFor: [
+      'Rapid prototyping visuals',
+      'Icon generation',
+      'Quick mockups',
+      'Social media graphics'
+    ],
+    recommended: true,
+    releaseDate: '2025'
+  }
+];
+
 export interface ModelRecommendation {
   primary: AIModel;
   alternatives: AIModel[];
@@ -392,8 +712,8 @@ export function getModelRecommendation(projectType: string, complexity: 'simple'
     return {
       primary: CODE_GENERATION_MODELS.find(m => m.id === 'anthropic/claude-opus-4-20250514')!,
       alternatives: [
-        CODE_GENERATION_MODELS.find(m => m.id === 'openai/gpt-5-2025-08-07')!,
-        CODE_GENERATION_MODELS.find(m => m.id === 'google/gemini-2.5-pro')!
+        CODE_GENERATION_MODELS.find(m => m.id === 'openai/gpt-5.2')!,
+        CODE_GENERATION_MODELS.find(m => m.id === 'google/gemini-3-pro-preview')!
       ],
       reasoning: 'Complex projects need superior reasoning and architectural capabilities. Claude Opus 4 excels at understanding intricate requirements and making sound design decisions.'
     };
@@ -402,36 +722,36 @@ export function getModelRecommendation(projectType: string, complexity: 'simple'
   // Large codebase analysis
   if (projectLower.includes('refactor') || projectLower.includes('legacy') || projectLower.includes('migration')) {
     return {
-      primary: CODE_GENERATION_MODELS.find(m => m.id === 'google/gemini-2.5-pro')!,
+      primary: CODE_GENERATION_MODELS.find(m => m.id === 'google/gemini-3-pro-preview')!,
       alternatives: [
-        CODE_GENERATION_MODELS.find(m => m.id === 'anthropic/claude-opus-4-20250514')!,
-        CODE_GENERATION_MODELS.find(m => m.id === 'anthropic/claude-sonnet-4-20250514')!
+        CODE_GENERATION_MODELS.find(m => m.id === 'google/gemini-2.5-pro')!,
+        CODE_GENERATION_MODELS.find(m => m.id === 'anthropic/claude-opus-4-20250514')!
       ],
-      reasoning: 'The 2M token context window of Gemini 2.5 Pro allows it to analyze entire codebases at once, making it ideal for refactoring and migration projects.'
+      reasoning: 'The 2M token context window of Gemini 3 Pro allows it to analyze entire codebases at once, making it ideal for refactoring and migration projects.'
     };
   }
 
   // Algorithm-heavy projects
   if (projectLower.includes('algorithm') || projectLower.includes('data structure') || projectLower.includes('backend')) {
     return {
-      primary: CODE_GENERATION_MODELS.find(m => m.id === 'deepseek/deepseek-coder-v2')!,
+      primary: CODE_GENERATION_MODELS.find(m => m.id === 'deepseek/deepseek-coder-v3')!,
       alternatives: [
         CODE_GENERATION_MODELS.find(m => m.id === 'anthropic/claude-sonnet-4-20250514')!,
-        CODE_GENERATION_MODELS.find(m => m.id === 'openai/gpt-5-mini-2025-08-07')!
+        CODE_GENERATION_MODELS.find(m => m.id === 'openai/gpt-5-mini')!
       ],
-      reasoning: 'DeepSeek Coder V2 specializes in algorithmic thinking and data structures, offering excellent performance at a lower cost for backend-focused work.'
+      reasoning: 'DeepSeek Coder V3 specializes in algorithmic thinking and data structures, offering excellent performance at a lower cost for backend-focused work.'
     };
   }
 
   // Budget-conscious / MVP / Startup
   if (complexity === 'simple' || projectLower.includes('mvp') || projectLower.includes('prototype') || projectLower.includes('startup')) {
     return {
-      primary: CODE_GENERATION_MODELS.find(m => m.id === 'openai/gpt-5-mini-2025-08-07')!,
+      primary: CODE_GENERATION_MODELS.find(m => m.id === 'google/gemini-3-flash-preview')!,
       alternatives: [
-        CODE_GENERATION_MODELS.find(m => m.id === 'google/gemini-2.5-flash')!,
-        CODE_GENERATION_MODELS.find(m => m.id === 'anthropic/claude-3-5-haiku-20241022')!
+        CODE_GENERATION_MODELS.find(m => m.id === 'openai/gpt-5-mini')!,
+        CODE_GENERATION_MODELS.find(m => m.id === 'google/gemini-2.5-flash')!
       ],
-      reasoning: 'GPT-5 Mini offers excellent performance at a fraction of the cost, perfect for startups and MVPs that need to move fast without breaking the bank.'
+      reasoning: 'Gemini 3 Flash Preview offers excellent performance at a fraction of the cost, perfect for startups and MVPs that need to move fast without breaking the bank.'
     };
   }
 
@@ -439,9 +759,24 @@ export function getModelRecommendation(projectType: string, complexity: 'simple'
   return {
     primary: CODE_GENERATION_MODELS.find(m => m.id === 'anthropic/claude-sonnet-4-20250514')!,
     alternatives: [
-      CODE_GENERATION_MODELS.find(m => m.id === 'openai/gpt-5-mini-2025-08-07')!,
-      CODE_GENERATION_MODELS.find(m => m.id === 'google/gemini-2.5-flash')!
+      CODE_GENERATION_MODELS.find(m => m.id === 'google/gemini-3-flash-preview')!,
+      CODE_GENERATION_MODELS.find(m => m.id === 'openai/gpt-5-mini')!
     ],
     reasoning: 'Claude Sonnet 4 provides the best balance of intelligence, speed, and cost for typical web applications. It excels at React, TypeScript, and modern frameworks.'
   };
+}
+
+// Get all models combined
+export function getAllModels(): AIModel[] {
+  return [...CODE_GENERATION_MODELS, ...IMAGE_GENERATION_MODELS];
+}
+
+// Get model by ID
+export function getModelById(id: string): AIModel | undefined {
+  return getAllModels().find(m => m.id === id);
+}
+
+// Get recommended models only
+export function getRecommendedModels(): AIModel[] {
+  return getAllModels().filter(m => m.recommended);
 }
