@@ -8,7 +8,7 @@ import { BaseInfrastructureConfig } from './BaseInfrastructureConfig';
 import { StorageSelector } from './StorageSelector';
 import { CostCalculator } from './CostCalculator';
 import { getRecommendedStack } from '@/data/infrastructure';
-import { Settings, Zap, Brain, DollarSign } from 'lucide-react';
+import { Settings, Zap, Brain, DollarSign, Flame, Cloud, Wifi, WifiOff } from 'lucide-react';
 
 interface InfrastructureSelection {
   database?: string;
@@ -28,11 +28,23 @@ export const InfrastructureWizard = ({
   onSelectionChange,
   onComplete 
 }: InfrastructureWizardProps) => {
-  const [selection, setSelection] = useState<InfrastructureSelection>({});
+  // Pre-select Fireproof as default
+  const [selection, setSelection] = useState<InfrastructureSelection>({
+    database: 'fireproof' // Default to Fireproof
+  });
   const [activeTab, setActiveTab] = useState('database');
   const [useRecommended, setUseRecommended] = useState(false);
 
   const recommendedStack = getRecommendedStack(appType);
+
+  // Initialize with Fireproof on mount
+  useEffect(() => {
+    if (!selection.database) {
+      const initialSelection = { database: 'fireproof' };
+      setSelection(initialSelection);
+      onSelectionChange?.(initialSelection);
+    }
+  }, []);
 
   useEffect(() => {
     if (useRecommended) {
@@ -66,6 +78,14 @@ export const InfrastructureWizard = ({
           Choose the best database, blockchain infrastructure, and storage options for your {appType} app.
           All options are optimized for Base chain and cost efficiency.
         </p>
+        
+        {/* Current Storage Indicator */}
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
+          <Flame className="w-4 h-4 text-orange-500" />
+          <span className="text-sm font-medium">
+            Default: <span className="text-primary">Fireproof</span> (Local-first, Offline-ready)
+          </span>
+        </div>
       </div>
 
       {/* Quick Setup Option */}

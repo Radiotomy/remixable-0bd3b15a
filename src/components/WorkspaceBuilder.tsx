@@ -3,7 +3,9 @@ import { User as SupabaseUser } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useProjectManager } from "@/hooks/useProjectManager";
+import { useStorageProvider } from "@/hooks/useStorageProvider";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { CategoryTabs } from "@/components/CategoryTabs";
 import { TemplateCard } from "@/components/TemplateCard";
 import { ChatInterface } from "@/components/ChatInterface";
@@ -11,6 +13,7 @@ import { GeneratedAppPreview } from "@/components/GeneratedAppPreview";
 import { ModelSelector, ModelConfig, ModelParameters } from "@/components/ModelSelector";
 import { InfrastructureWizard } from "@/components/InfrastructureWizard";
 import { templates, Template } from "@/data/templates";
+import { Flame, Cloud, Wifi, WifiOff } from "lucide-react";
 
 interface WorkspaceBuilderProps {
   user: SupabaseUser | null;
@@ -21,6 +24,7 @@ export const WorkspaceBuilder = ({ user }: WorkspaceBuilderProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
   const { saveProject } = useProjectManager();
+  const { config, status, getProviderInfo } = useStorageProvider();
   const [generatedApp, setGeneratedApp] = useState<{
     title: string;
     description: string;
@@ -233,20 +237,56 @@ export const WorkspaceBuilder = ({ user }: WorkspaceBuilderProps) => {
         />
       </div>
 
-      {/* Configuration Buttons */}
-      <div className="flex justify-center gap-4">
-        <Button
-          variant="outline"
-          onClick={() => setShowModelSelector(!showModelSelector)}
-        >
-          Configure AI Models ({Object.keys(selectedModels).length} selected)
-        </Button>
-        <Button 
-          variant="outline"
-          onClick={() => setShowInfrastructureWizard(!showInfrastructureWizard)}
-        >
-          Infrastructure Setup
-        </Button>
+      {/* Storage Status & Configuration Buttons */}
+      <div className="flex flex-col items-center gap-4">
+        {/* Storage Provider Status */}
+        <div className="flex items-center gap-3 px-4 py-2 bg-muted/50 rounded-lg border">
+          <div className="flex items-center gap-2">
+            <Flame className="w-4 h-4 text-orange-500" />
+            <span className="text-sm font-medium">
+              Storage: {getProviderInfo(config.provider).name}
+            </span>
+          </div>
+          <div className="h-4 w-px bg-border" />
+          <div className="flex items-center gap-1.5">
+            {status.isOnline ? (
+              <>
+                <Wifi className="w-3.5 h-3.5 text-green-500" />
+                <span className="text-xs text-muted-foreground">Online</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-3.5 h-3.5 text-yellow-500" />
+                <span className="text-xs text-muted-foreground">Offline (data saved locally)</span>
+              </>
+            )}
+          </div>
+          {config.cloudSync && (
+            <>
+              <div className="h-4 w-px bg-border" />
+              <Badge variant="outline" className="text-xs">
+                <Cloud className="w-3 h-3 mr-1" />
+                Cloud Sync
+              </Badge>
+            </>
+          )}
+        </div>
+
+        {/* Configuration Buttons */}
+        <div className="flex justify-center gap-4">
+          <Button
+            variant="outline"
+            onClick={() => setShowModelSelector(!showModelSelector)}
+          >
+            Configure AI Models ({Object.keys(selectedModels).length} selected)
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => setShowInfrastructureWizard(!showInfrastructureWizard)}
+          >
+            Infrastructure Setup
+          </Button>
+        </div>
       </div>
 
       {/* Model Selector */}
