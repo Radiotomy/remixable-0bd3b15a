@@ -1,33 +1,30 @@
 import { http, createConfig } from 'wagmi'
-import { base, baseGoerli } from 'wagmi/chains'
-import { coinbaseWallet, metaMask, walletConnect } from 'wagmi/connectors'
-
-const projectId = 'your-walletconnect-project-id' // TODO: Replace with actual project ID
+import { base, baseSepolia } from 'wagmi/chains'
+import { coinbaseWallet, metaMask } from 'wagmi/connectors'
 
 export const config = createConfig({
-  chains: [base, baseGoerli],
+  chains: [base, baseSepolia],
   connectors: [
     coinbaseWallet({
       appName: 'Remixable',
       appLogoUrl: 'https://remixable.ai/logo.png',
     }),
     metaMask(),
-    walletConnect({ projectId }),
   ],
   transports: {
     [base.id]: http(),
-    [baseGoerli.id]: http(),
+    [baseSepolia.id]: http(),
   },
 })
 
 // Base chain configuration
 export const BASE_CHAIN_ID = base.id
-export const BASE_TESTNET_CHAIN_ID = baseGoerli.id
+export const BASE_TESTNET_CHAIN_ID = baseSepolia.id
 
 // USDC contract addresses on Base
 export const USDC_CONTRACT_ADDRESS: Record<number, `0x${string}`> = {
   [base.id]: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-  [baseGoerli.id]: '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
+  [baseSepolia.id]: '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
 } as const
 
 // Contract addresses (deployed on BASE mainnet)
@@ -49,7 +46,7 @@ export const CONTRACT_ADDRESSES: Record<number, {
     governor: '0x9c59d488ad5798b6ae9bdd90d99e045d95196828',
     tokenFactory: '0xb75c63c7986bb8433f102f9ea3275e74d1c4c6ee',
   },
-  [baseGoerli.id]: {
+  [baseSepolia.id]: {
     rmxToken: '0x0000000000000000000000000000000000000000',
     tokenVesting: '0x0000000000000000000000000000000000000000',
     revenueDistribution: '0x0000000000000000000000000000000000000000',
